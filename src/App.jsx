@@ -19,7 +19,8 @@ import {
   ChefHat,
   Lock,
   AlertCircle,
-  ChevronDown
+  ChevronDown,
+  User
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import ChatWidget from './ChatWidget';
@@ -37,6 +38,7 @@ const App = () => {
   const [isMenuExpanded, setIsMenuExpanded] = useState(false);
 
   // SMS Kundeklub state
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [gdprAccepted, setGdprAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -208,6 +210,7 @@ const App = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          name,
           phone,
           store_id: store?.id,
           store_name: store?.name,
@@ -481,54 +484,87 @@ const App = () => {
       {/* SMS KUNDEKLUB */}
       <section id="kundeklub" className="py-16 md:py-32 px-6 bg-white overflow-hidden border-t border-slate-50">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-10 md:gap-16">
-          <div className="lg:w-1/2 space-y-8">
+
+          {/* VENSTRE SIDE */}
+          <div className="lg:w-1/2 space-y-8 text-left text-slate-900">
             <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-orange-50 border border-orange-100" style={{ color: brandColor }}>
               <Smartphone size={16} />
-              <span className="text-[10px] font-black uppercase tracking-widest italic leading-none">Bliv en del af {store.name}-familien</span>
+              <span className="text-[10px] font-black uppercase tracking-widest italic leading-none">
+                Bliv en del af {store.name}-familien
+              </span>
             </div>
             <h2 className="text-4xl md:text-5xl lg:text-7xl font-black italic uppercase tracking-tighter leading-[0.9] text-slate-900">
-              Få tilbud via <br /><span style={{ color: brandColor }}>SMS-Klubben.</span>
+              Få tilbud via <br />
+              <span style={{ color: brandColor }}>SMS-Klubben.</span>
             </h2>
             <p className="text-slate-500 text-xl font-medium italic leading-relaxed max-w-md">
-              Tilmeld dig vores eksklusive fordelsklub og modtag hemmelige tilbud, før alle andre. Det er gratis, og vi sender kun det bedste.
+              Tilmeld dig vores eksklusive fordelsklub og modtag hemmelige tilbud, før alle andre.
+              Det er gratis, og vi sender kun det bedste.
             </p>
           </div>
 
+          {/* HØJRE SIDE */}
           <div className="lg:w-1/2 w-full">
             {isSubscribed ? (
               <div className="p-12 rounded-[50px] text-white text-center shadow-2xl" style={{ backgroundColor: brandColor }}>
-                <div className="bg-white/20 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white">
+                <div className="bg-white/20 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6">
                   <Check size={40} strokeWidth={4} />
                 </div>
                 <h3 className="text-3xl font-black italic uppercase mb-2">Velkommen i klubben!</h3>
                 <p className="text-orange-100 font-medium italic">Du har nu modtaget en bekræftelses-SMS.</p>
               </div>
             ) : (
-              <form onSubmit={handleSubscribe} className="bg-[#FAFAFA] p-7 md:p-14 rounded-[60px] border border-slate-100 shadow-xl space-y-8 relative overflow-hidden">
+              <form onSubmit={handleSubscribe} className="bg-[#FAFAFA] p-7 md:p-14 rounded-[60px] border border-slate-100 shadow-xl space-y-6 relative overflow-hidden">
+
+                {/* NAVN */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 italic block">Dit Navn</label>
+                  <div className="relative">
+                    <input
+                      required
+                      type="text"
+                      placeholder="F.eks. Anders Andersen"
+                      className="w-full bg-white border-2 border-slate-100 rounded-[24px] py-5 px-8 pl-14 text-lg font-bold outline-none transition-all placeholder:text-slate-200 shadow-inner italic"
+                      onFocus={e => e.target.style.borderColor = brandColor}
+                      onBlur={e => e.target.style.borderColor = ''}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                    <User className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                  </div>
+                </div>
+
+                {/* TELEFON */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 italic block">Dit Telefonnummer</label>
-                  <input
-                    required
-                    type="tel"
-                    placeholder="+45 00 00 00 00"
-                    className="w-full bg-white border-2 border-slate-100 rounded-[24px] py-6 px-8 text-xl font-bold outline-none transition-all placeholder:text-slate-200 shadow-inner italic"
-                    style={{ '--tw-ring-color': brandColor }}
-                    onFocus={e => e.target.style.borderColor = brandColor}
-                    onBlur={e => e.target.style.borderColor = ''}
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
+                  <div className="relative">
+                    <input
+                      required
+                      type="tel"
+                      placeholder="+45 00 00 00 00"
+                      className="w-full bg-white border-2 border-slate-100 rounded-[24px] py-5 px-8 pl-14 text-lg font-bold outline-none transition-all placeholder:text-slate-200 shadow-inner italic"
+                      onFocus={e => e.target.style.borderColor = brandColor}
+                      onBlur={e => e.target.style.borderColor = ''}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                    <Phone size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
+                  </div>
                 </div>
+
+                {/* GDPR */}
                 <label className="flex items-start gap-4 cursor-pointer group">
                   <div className="relative mt-1 shrink-0">
                     <input type="checkbox" required className="peer sr-only" checked={gdprAccepted} onChange={() => setGdprAccepted(!gdprAccepted)} />
-                    <div className="w-6 h-6 border-2 border-slate-200 rounded-lg bg-white transition-all shadow-sm" style={gdprAccepted ? { backgroundColor: brandColor, borderColor: brandColor } : {}}></div>
+                    <div className="w-6 h-6 border-2 border-slate-200 rounded-lg bg-white peer-checked:bg-orange-600 peer-checked:border-orange-600 transition-all shadow-sm" style={gdprAccepted ? { backgroundColor: brandColor, borderColor: brandColor } : {}}></div>
                     {gdprAccepted && <Check className="absolute inset-0 text-white w-6 h-6 p-1" strokeWidth={4} />}
                   </div>
                   <div className="flex-1 text-xs font-medium italic text-slate-400 leading-relaxed group-hover:text-slate-600 transition-colors">
-                    Jeg giver samtykke til SMS-marketing fra {store.name}. Jeg kan til enhver tid afmelde mig. Læs vores <span className="underline">Privatlivspolitik</span>.
+                    Jeg giver samtykke til, at {store.name} må sende mig SMS-marketing. Jeg kan til enhver tid afmelde mig. Læs vores <span className="underline">Privatlivspolitik</span>.
                   </div>
                 </label>
+
+                {/* KNAP */}
                 <button
                   disabled={!gdprAccepted || isSubmitting}
                   type="submit"
@@ -537,6 +573,7 @@ const App = () => {
                 >
                   {isSubmitting ? <Zap className="animate-spin" size={24} /> : <>Tilmeld mig nu <ArrowRight size={24} /></>}
                 </button>
+
                 <div className="flex items-center justify-center gap-3 opacity-30 pt-2">
                   <ShieldCheck size={14} />
                   <span className="text-[10px] font-black uppercase tracking-widest italic">100% GDPR Sikret</span>
