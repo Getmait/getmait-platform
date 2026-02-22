@@ -5,6 +5,7 @@ import {
   MapPin,
   Phone,
   MessageCircle,
+  X,
   Sparkles,
   ArrowRight,
   Zap,
@@ -13,6 +14,11 @@ import {
   Smartphone,
   ShieldCheck,
   Check,
+  Send,
+  Loader2,
+  ChefHat,
+  Lock,
+  ThumbsUp,
   AlertCircle,
   ChevronDown
 } from 'lucide-react';
@@ -36,6 +42,13 @@ const App = () => {
   const [gdprAccepted, setGdprAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+
+  // Chat overlay state
+  const [showChat, setShowChat] = useState(false);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const scrollRef = useRef(null);
 
   // --- DATA FETCHING ---
   useEffect(() => {
@@ -105,6 +118,18 @@ const App = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Welcome message når overlay åbnes
+  useEffect(() => {
+    if (showChat && messages.length === 0) {
+      setMessages([{ role: 'assistant', content: `Ciao! Velkommen til ${store?.name}. Jeg er din Mait. Hvad skal vi forkæle dig med fra ovnen i dag? 🍕` }]);
+    }
+  }, [showChat, messages.length, store?.name]);
+
+  // Auto-scroll i chat overlay
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages, isLoading]);
+
   // --- MENU LOGIK ---
   const categories = useMemo(() => [...new Set(menu.map(item => item.kategori))], [menu]);
   const categoryLabels = ['SE ALT', ...categories.map(c => c.toUpperCase())];
@@ -166,6 +191,40 @@ const App = () => {
     setIsSubscribed(true);
   };
 
+  // --- CHAT OVERLAY ---
+  const N8N_WEBHOOK = import.meta.env.VITE_N8N_CHAT_WEBHOOK;
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+    const userMsg = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMsg]);
+    const currentInput = input;
+    setInput('');
+    setIsLoading(true);
+    try {
+      const response = await fetch(N8N_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: currentInput,
+          store_id: store?.id,
+          store_name: store?.name,
+          source: 'web_overlay',
+          sessionId: `overlay_${Date.now()}`,
+          timestamp: new Date().toISOString()
+        })
+      });
+      const data = await response.json();
+      const reply = data.reply || data.output || data.message || 'Tak! Vi vender tilbage hurtigst muligt.';
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'assistant', content: `Hov, der opstod en fejl. Prøv igen eller ring til os.` }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const scrollToId = (id) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -190,6 +249,7 @@ const App = () => {
 
   const brandColor = store?.primary_color || '#ea580c';
   const openingHoursFormatted = formatOpeningHours(store?.opening_hours);
+  const firstPizza = menu.find(item => item.kategori?.toLowerCase() === 'pizza');
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] font-sans text-slate-900 selection:bg-orange-100 text-left">
@@ -243,12 +303,12 @@ const App = () => {
             >
               <PhoneCall size={20} /> Ring til din Mait
             </a>
-            <a
-              href={`sms:${store.phone_number || store.contact_phone}`}
+            <button
+              onClick={() => setShowChat(true)}
               className="bg-white border-2 border-slate-100 text-slate-800 px-10 py-5 rounded-[24px] font-black uppercase italic tracking-widest flex items-center justify-center gap-3 text-base shadow-sm hover:bg-slate-50 transition-all"
             >
               <MessageSquare size={20} /> Chat din bestilling
-            </a>
+            </button>
           </div>
         </div>
 
@@ -516,9 +576,126 @@ const App = () => {
       {/* CHAT WIDGET - UÆNDRET */}
       <ChatWidget />
 
+      {/* CHAT OVERLAY — åbnes via "Chat din bestilling" */}
+      {showChat && (
+        <div className="fixed inset-0 z-[200] bg-slate-900/95 backdrop-blur-2xl flex items-end md:items-center justify-center p-0 md:p-6 chat-overlay-in">
+          <div className="bg-[#FDFCFB] w-full max-w-5xl h-[100vh] md:h-[850px] md:rounded-[4.5rem] shadow-[0_80px_160px_-40px_rgba(0,0,0,0.6)] relative flex flex-col md:flex-row overflow-hidden border border-white/20 chat-panel-in">
+
+            {/* SIDEBAR */}
+            <div className="hidden md:flex md:w-1/3 bg-[#0F172A] p-12 text-white relative overflow-hidden flex-col justify-between shrink-0 border-r border-white/5">
+              <div className="relative z-10">
+                <div className="w-24 h-24 rounded-[3rem] flex items-center justify-center mb-12 shadow-2xl transform hover:rotate-6 transition-transform" style={{ backgroundColor: brandColor }}>
+                  <ChefHat size={48} className="text-white" />
+                </div>
+                <h3 className="text-5xl font-black italic uppercase tracking-tighter leading-[0.95] mb-8">Mait Kitchen Lounge.</h3>
+                <div className="space-y-10">
+                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 hover:bg-white/10 transition-colors">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Sparkles size={16} style={{ color: brandColor }} />
+                      <span className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: brandColor }}>Dagens anbefaling</span>
+                    </div>
+                    <p className="text-sm font-bold italic text-slate-300 leading-relaxed">
+                      {firstPizza ? `Prøv vores ${firstPizza.navn} – ${firstPizza.beskrivelse}` : `Spørg om dagens speciale fra ${store.name}!`}
+                    </p>
+                  </div>
+                  <div className="pt-8 border-t border-white/10 space-y-6">
+                    <div className="flex items-center gap-5">
+                      <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_15px_#22c55e]"></div>
+                      <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 italic">Køkkenet er Online</span>
+                    </div>
+                    <div className="flex items-center gap-5">
+                      <Clock size={20} style={{ color: brandColor }} />
+                      <span className="text-sm font-bold italic text-slate-300 uppercase tracking-widest">{store.waiting_time || 20} min. ventetid</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <Pizza className="absolute -bottom-20 -left-20 opacity-5 w-[450px] h-[450px] rotate-12 pointer-events-none" style={{ color: brandColor }} />
+            </div>
+
+            {/* CHAT OMRÅDE */}
+            <div className="flex-1 flex flex-col bg-[#FDFCFB]">
+              <header className="p-8 md:p-10 border-b border-slate-100 flex justify-between items-center bg-white/40 backdrop-blur-md sticky top-0 z-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-3 h-3 rounded-full shadow-[0_0_15px_#f97316]" style={{ backgroundColor: brandColor }}></div>
+                  <span className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-400 italic leading-none">Personlig Concierge</span>
+                </div>
+                <button onClick={() => setShowChat(false)} className="p-4 bg-slate-100 rounded-3xl hover:bg-red-50 hover:text-red-600 transition-all text-slate-400 active:scale-90 shadow-sm border border-slate-200/50">
+                  <X size={24} />
+                </button>
+              </header>
+
+              <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 md:p-12 space-y-8 custom-scrollbar bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
+                {messages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[75%] p-8 md:p-10 rounded-[3.5rem] text-xl font-bold italic leading-relaxed shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)] border ${
+                      msg.role === 'user'
+                        ? 'bg-[#0F172A] text-white rounded-tr-none border-[#0F172A]'
+                        : 'bg-white text-slate-800 border-slate-100 rounded-tl-none'
+                    }`}>
+                      {msg.content}
+                      {msg.role === 'assistant' && i === messages.length - 1 && !isLoading && (
+                        <div className="mt-8 flex flex-wrap gap-3">
+                          {firstPizza && (
+                            <button onClick={() => setInput(`Jeg vil gerne bestille ${firstPizza.navn}`)} className="flex items-center gap-2 px-5 py-3 bg-[#FDFCFB] border-2 border-slate-200 rounded-3xl text-[10px] font-black text-slate-500 uppercase italic hover:border-orange-600 hover:text-orange-600 transition-all shadow-sm active:scale-95">
+                              <ThumbsUp size={14} /> Bestil {firstPizza.navn}
+                            </button>
+                          )}
+                          <button onClick={() => setInput('Hvad anbefaler du?')} className="flex items-center gap-2 px-5 py-3 bg-[#FDFCFB] border-2 border-slate-200 rounded-3xl text-[10px] font-black text-slate-500 uppercase italic hover:border-orange-600 hover:text-orange-600 transition-all shadow-sm active:scale-95">
+                            <Sparkles size={14} /> Hvad anbefaler du?
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="flex items-center gap-5 bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-xl">
+                      <Loader2 className="animate-spin" size={28} style={{ color: brandColor }} />
+                      <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-300 italic leading-none">Mait forbereder svaret...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 md:p-10 bg-white border-t border-slate-100 shrink-0">
+                <form onSubmit={handleSendMessage} className="flex gap-4 mb-6 max-w-4xl mx-auto">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Hvad kan jeg sætte i gang for dig?"
+                    className="flex-1 bg-[#F9FAFB] border-2 border-slate-200 rounded-[3rem] px-8 py-6 text-xl focus:bg-white outline-none font-bold placeholder:text-slate-200 shadow-inner italic transition-all"
+                    onFocus={e => e.target.style.borderColor = brandColor}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                    disabled={isLoading}
+                  />
+                  <button type="submit" disabled={isLoading || !input.trim()} className="p-6 rounded-[3rem] text-white shadow-[0_25px_50px_-12px_rgba(234,88,12,0.4)] hover:opacity-90 hover:scale-105 transition-all active:scale-90 flex items-center justify-center disabled:opacity-30" style={{ backgroundColor: brandColor }}>
+                    <Send size={36} />
+                  </button>
+                </form>
+                <div className="flex justify-center gap-8 opacity-30">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><Lock size={12} /> Krypteret</div>
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><Zap size={12} /> Hurtig AI</div>
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><ChefHat size={12} /> Køkken-klar</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 20px; }
         @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
         .animate-bounce-slow { animation: bounce-slow 4s infinite ease-in-out; }
+        @keyframes chat-overlay-fade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes chat-panel-slide { from { opacity: 0; transform: translateY(40px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .chat-overlay-in { animation: chat-overlay-fade 0.4s ease-out; }
+        .chat-panel-in { animation: chat-panel-slide 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
       `}</style>
     </div>
   );
