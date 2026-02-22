@@ -22,7 +22,8 @@ import {
   ChevronDown,
   User,
   Utensils,
-  UserCheck
+  UserCheck,
+  Building2
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import ChatWidget from './ChatWidget';
@@ -656,11 +657,12 @@ const App = () => {
                 </div>
               )}
               {store.cvr_number && (
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="inline-flex items-center gap-1.5 bg-white/5 border border-white/8 rounded px-2 py-1 text-[10px] not-italic font-mono tracking-wider text-white/30">
-                    <span className="text-white/20 font-sans font-bold uppercase text-[9px] tracking-widest">CVR</span>
-                    <span className="text-white/45">{store.cvr_number}</span>
-                  </span>
+                <div className="flex items-start gap-3">
+                  <Building2 size={18} style={{ color: brandColor }} className="shrink-0 mt-0.5" />
+                  <div>
+                    <span className="block leading-tight">{store.cvr_number}</span>
+                    <span className="text-[10px] font-normal not-italic text-white/35 uppercase tracking-widest">CVR-nr.</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -912,8 +914,8 @@ const App = () => {
                   {store.address && <p>{store.address}</p>}
                   {store.city && <p>{store.city}</p>}
                   {store.cvr_number && <p>CVR-nr.: {store.cvr_number}</p>}
-                  {(store.phone_number || store.contact_phone) && (
-                    <p>Tlf.: <a href={`tel:${store.phone_number || store.contact_phone}`} className="underline" style={{ color: brandColor }}>{store.phone_number || store.contact_phone}</a></p>
+                  {store.contact_phone && (
+                    <p>Tlf.: <a href={`tel:${store.contact_phone}`} className="underline" style={{ color: brandColor }}>{store.contact_phone}</a></p>
                   )}
                 </div>
               </section>
@@ -946,8 +948,8 @@ const App = () => {
               <section className="space-y-2">
                 <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">6. Reklamation</h3>
                 <p>Har du oplevet fejl eller mangler ved din ordre, bedes du kontakte os hurtigst muligt — gerne samme dag. Vi behandler alle reklamationer individuelt og bestræber os på at finde en tilfredsstillende løsning.</p>
-                {(store.phone_number || store.contact_phone) && (
-                  <p>Kontakt os på <a href={`tel:${store.phone_number || store.contact_phone}`} className="underline font-bold" style={{ color: brandColor }}>{store.phone_number || store.contact_phone}</a>.</p>
+                {store.contact_phone && (
+                  <p>Kontakt os på <a href={`tel:${store.contact_phone}`} className="underline font-bold" style={{ color: brandColor }}>{store.contact_phone}</a>.</p>
                 )}
               </section>
 
