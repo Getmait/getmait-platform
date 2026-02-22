@@ -302,17 +302,14 @@ const App = () => {
   const isOpen = (() => {
     if (!store.is_open) return false;
     if (!store.opening_hours) return true;
+    // Pålidelig metode: konverter til dansk tid via toLocaleString
     const now = new Date();
-    const parts = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Europe/Copenhagen',
-      weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false
-    }).formatToParts(now);
-    const day = parts.find(p => p.type === 'weekday')?.value?.toLowerCase();
-    const hour = parseInt(parts.find(p => p.type === 'hour')?.value);
-    const minute = parseInt(parts.find(p => p.type === 'minute')?.value);
+    const copenhagenNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Copenhagen' }));
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const day = days[copenhagenNow.getDay()];
+    const current = copenhagenNow.getHours() * 60 + copenhagenNow.getMinutes();
     const todayHours = store.opening_hours[day];
     if (!todayHours) return false;
-    const current = hour * 60 + minute;
     const [openH, openM] = todayHours.open.split(':').map(Number);
     const [closeH, closeM] = todayHours.close.split(':').map(Number);
     return current >= openH * 60 + openM && current < closeH * 60 + closeM;
