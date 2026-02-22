@@ -21,7 +21,8 @@ import {
   AlertCircle,
   ChevronDown,
   User,
-  Utensils
+  Utensils,
+  UserCheck
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import ChatWidget from './ChatWidget';
@@ -643,17 +644,23 @@ const App = () => {
                   <span>{store.address}</span>
                 </div>
               )}
-              {(store.phone_number || store.contact_phone) && (
-                <div className="flex items-center gap-3">
-                  <Phone size={18} style={{ color: brandColor }} className="shrink-0" />
-                  <a href={`tel:${store.phone_number || store.contact_phone}`} className="hover:text-orange-400 transition-colors">
-                    {store.phone_number || store.contact_phone}
-                  </a>
+              {store.contact_phone && (
+                <div className="flex items-start gap-3">
+                  <UserCheck size={18} style={{ color: brandColor }} className="shrink-0 mt-0.5" />
+                  <div>
+                    <a href={`tel:${store.contact_phone}`} className="hover:text-orange-400 transition-colors block leading-tight">
+                      {store.contact_phone}
+                    </a>
+                    <span className="text-[10px] font-normal not-italic text-white/35 uppercase tracking-widest">Personlig betjening</span>
+                  </div>
                 </div>
               )}
               {store.cvr_number && (
-                <div className="flex items-center gap-3 text-slate-600 text-xs">
-                  <span>CVR: {store.cvr_number}</span>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="inline-flex items-center gap-1.5 bg-white/5 border border-white/8 rounded px-2 py-1 text-[10px] not-italic font-mono tracking-wider text-white/30">
+                    <span className="text-white/20 font-sans font-bold uppercase text-[9px] tracking-widest">CVR</span>
+                    <span className="text-white/45">{store.cvr_number}</span>
+                  </span>
                 </div>
               )}
             </div>
