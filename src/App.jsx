@@ -331,7 +331,7 @@ const App = () => {
           <div className="flex items-center gap-8">
             <div className="hidden md:flex items-center gap-12">
               <button onClick={() => scrollToId('menu')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-orange-600 transition-colors italic">Menukort</button>
-              <button onClick={() => scrollToId('kundeklub')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-orange-600 transition-colors italic">SMS-Klub</button>
+              <button onClick={() => scrollToId('kundeklub')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-orange-600 transition-colors italic">Kundeklub</button>
             </div>
             <button onClick={() => scrollToId('menu')} className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl active:scale-95 transition-transform">Bestil nu</button>
           </div>
@@ -511,7 +511,7 @@ const App = () => {
             </div>
             <h2 className="text-4xl md:text-5xl lg:text-7xl font-black italic uppercase tracking-tighter leading-[0.9] text-slate-900">
               Få tilbud via <br />
-              <span style={{ color: brandColor }}>SMS-Klubben.</span>
+              <span style={{ color: brandColor }}>Kundeklubben.</span>
             </h2>
             <p className="text-slate-500 text-xl font-medium italic leading-relaxed max-w-md">
               Tilmeld dig vores eksklusive fordelsklub og modtag hemmelige tilbud, før alle andre.
@@ -948,7 +948,7 @@ const App = () => {
               <section className="space-y-2">
                 <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">7. Persondata og GDPR</h3>
                 <p>{store.name} behandler dine personoplysninger i overensstemmelse med gældende databeskyttelseslovgivning (GDPR). Oplysninger indsamlet i forbindelse med din bestilling bruges udelukkende til at behandle og levere din ordre samt til at kontakte dig ved behov.</p>
-                <p>Ved tilmelding til SMS-klubben giver du samtykke til modtagelse af markedsføring. Du kan til enhver tid afmelde dig.</p>
+                <p>Ved tilmelding til Kundeklubben giver du samtykke til modtagelse af markedsføring. Du kan til enhver tid afmelde dig.</p>
               </section>
 
               {/* Tvister */}
