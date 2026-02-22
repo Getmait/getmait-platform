@@ -47,6 +47,7 @@ const App = () => {
 
   // Chat overlay state
   const [showChat, setShowChat] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -638,8 +639,11 @@ const App = () => {
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto mt-20 pt-10 border-t border-white/5 text-center text-white/20 text-[10px] font-bold uppercase italic tracking-widest">
-          Powered by GetMait • © 2026 {store.name}
+        <div className="max-w-6xl mx-auto mt-20 pt-10 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-white/20 text-[10px] font-bold uppercase italic tracking-widest">
+          <span>Powered by GetMait • © 2026 {store.name}</span>
+          <button onClick={() => setShowTerms(true)} className="hover:text-white/50 transition-colors underline underline-offset-2">
+            Handelsbetingelser
+          </button>
         </div>
       </footer>
 
@@ -848,6 +852,95 @@ const App = () => {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* HANDELSBETINGELSER MODAL */}
+      {showTerms && (
+        <div className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-6" onClick={() => setShowTerms(false)}>
+          <div
+            className="bg-white w-full sm:max-w-2xl max-h-[90vh] sm:rounded-[2.5rem] rounded-t-[2.5rem] overflow-y-auto shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-8 py-6 flex justify-between items-center rounded-t-[2.5rem] z-10">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] italic mb-1" style={{ color: brandColor }}>Juridisk</p>
+                <h2 className="text-2xl font-black italic uppercase tracking-tight text-slate-900">Handelsbetingelser</h2>
+              </div>
+              <button onClick={() => setShowTerms(false)} className="p-3 bg-slate-100 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all text-slate-400">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Indhold */}
+            <div className="px-8 py-8 space-y-8 text-slate-600 text-sm leading-relaxed">
+
+              {/* Virksomhedsoplysninger */}
+              <section className="space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">1. Virksomhedsoplysninger</h3>
+                <div className="bg-slate-50 rounded-2xl p-5 space-y-1 font-medium">
+                  <p className="font-black text-slate-900">{store.name}</p>
+                  {store.address && <p>{store.address}</p>}
+                  {store.city && <p>{store.city}</p>}
+                  {store.cvr_number && <p>CVR-nr.: {store.cvr_number}</p>}
+                  {(store.phone_number || store.contact_phone) && (
+                    <p>Tlf.: <a href={`tel:${store.phone_number || store.contact_phone}`} className="underline" style={{ color: brandColor }}>{store.phone_number || store.contact_phone}</a></p>
+                  )}
+                </div>
+              </section>
+
+              {/* Bestilling */}
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">2. Bestilling</h3>
+                <p>Bestilling hos {store.name} kan foretages via vores hjemmeside, telefon eller chat. En bestilling er bindende, når du har modtaget en bekræftelse. Vi forbeholder os ret til at afvise bestillinger ved udsolgte varer eller ved force majeure.</p>
+              </section>
+
+              {/* Priser og betaling */}
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">3. Priser og betaling</h3>
+                <p>Alle priser er angivet i danske kroner (DKK) inkl. moms. {store.name} forbeholder sig ret til at ændre priser uden forudgående varsel. Betaling sker ved afhentning eller levering med de betalingsmidler, vi accepterer.</p>
+              </section>
+
+              {/* Afhentning og levering */}
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">4. Afhentning og levering</h3>
+                <p>Forventet ventetid er ca. {store.waiting_time || 20} minutter fra bestillingstidspunktet. Ventetiden er vejledende og kan variere afhængigt af efterspørgsel. {store.name} er ikke ansvarlig for forsinkelser som følge af forhold uden for vores kontrol.</p>
+              </section>
+
+              {/* Fortrydelsesret */}
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">5. Fortrydelsesret</h3>
+                <p>I henhold til forbrugeraftaleloven § 18, stk. 2, nr. 4, gælder der <strong>ingen fortrydelsesret</strong> for levering af fødevarer og andre varer, der forringes hurtigt. Bestilling af mad og drikkevarer hos {store.name} er derfor bindende.</p>
+              </section>
+
+              {/* Reklamation */}
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">6. Reklamation</h3>
+                <p>Har du oplevet fejl eller mangler ved din ordre, bedes du kontakte os hurtigst muligt — gerne samme dag. Vi behandler alle reklamationer individuelt og bestræber os på at finde en tilfredsstillende løsning.</p>
+                {(store.phone_number || store.contact_phone) && (
+                  <p>Kontakt os på <a href={`tel:${store.phone_number || store.contact_phone}`} className="underline font-bold" style={{ color: brandColor }}>{store.phone_number || store.contact_phone}</a>.</p>
+                )}
+              </section>
+
+              {/* Persondata */}
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">7. Persondata og GDPR</h3>
+                <p>{store.name} behandler dine personoplysninger i overensstemmelse med gældende databeskyttelseslovgivning (GDPR). Oplysninger indsamlet i forbindelse med din bestilling bruges udelukkende til at behandle og levere din ordre samt til at kontakte dig ved behov.</p>
+                <p>Ved tilmelding til SMS-klubben giver du samtykke til modtagelse af markedsføring. Du kan til enhver tid afmelde dig.</p>
+              </section>
+
+              {/* Tvister */}
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">8. Tvister og lovvalg</h3>
+                <p>Disse handelsbetingelser er underlagt dansk ret. Opstår der en tvist, som ikke kan løses i mindelighed, kan sagen indbringes for de ordinære danske domstole.</p>
+              </section>
+
+              <p className="text-xs text-slate-400 italic pt-4 border-t border-slate-100">
+                Senest opdateret: {new Date().getFullYear()} • {store.name}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
