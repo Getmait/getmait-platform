@@ -47,6 +47,10 @@ const App = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
 
+  // Roterende anbefaling (desktop sidebar)
+  const [featuredCatIndex, setFeaturedCatIndex] = useState(0);
+  const [featuredVisible, setFeaturedVisible] = useState(true);
+
   // Chat overlay state
   const [showChat, setShowChat] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -166,6 +170,19 @@ const App = () => {
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, isLoading]);
+
+  // Roter "Dagens anbefaling" gennem kategorier hvert 4. sekund
+  useEffect(() => {
+    if (menu.length === 0) return;
+    const interval = setInterval(() => {
+      setFeaturedVisible(false);
+      setTimeout(() => {
+        setFeaturedCatIndex(i => (i + 1) % [...new Set(menu.map(m => m.kategori))].length);
+        setFeaturedVisible(true);
+      }, 400);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [menu]);
 
   // --- MENU LOGIK ---
   const categories = useMemo(() => [...new Set(menu.map(item => item.kategori))], [menu]);
@@ -296,7 +313,9 @@ const App = () => {
 
   const brandColor = store?.primary_color || '#ea580c';
   const openingHoursFormatted = formatOpeningHours(store?.opening_hours);
-  const firstPizza = menu.find(item => item.kategori?.toLowerCase() === 'pizza');
+  const menuCategories = [...new Set(menu.map(m => m.kategori))];
+  const featuredCategory = menuCategories[featuredCatIndex % Math.max(menuCategories.length, 1)];
+  const featuredItem = menu.find(item => item.kategori === featuredCategory);
 
   // Tjek om butikken er åben baseret på åbningstider (dansk tid)
   // is_open = false er altid lukket (manuel override ved travlhed)
@@ -795,11 +814,20 @@ const App = () => {
                     <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 hover:bg-white/10 transition-colors">
                       <div className="flex items-center gap-3 mb-2">
                         <Sparkles size={16} style={{ color: brandColor }} />
-                        <span className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: brandColor }}>Dagens anbefaling</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: brandColor }}>
+                          {featuredCategory || 'Dagens anbefaling'}
+                        </span>
                       </div>
-                      <p className="text-sm font-bold italic text-slate-300 leading-relaxed">
-                        {firstPizza ? `Prøv vores ${firstPizza.navn} – ${firstPizza.beskrivelse}` : `Spørg om dagens speciale fra ${store.name}!`}
-                      </p>
+                      <div style={{ opacity: featuredVisible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
+                        <p className="text-sm font-bold italic text-slate-300 leading-relaxed">
+                          {featuredItem
+                            ? `${featuredItem.navn}${featuredItem.beskrivelse ? ` — ${featuredItem.beskrivelse}` : ''}`
+                            : `Spørg om dagens speciale fra ${store.name}!`}
+                        </p>
+                        {featuredItem?.pris && (
+                          <p className="text-xs font-black mt-2" style={{ color: brandColor }}>{featuredItem.pris} kr.</p>
+                        )}
+                      </div>
                     </div>
                     <div className="pt-8 border-t border-white/10 space-y-6">
                       <div className="flex items-center gap-5">
