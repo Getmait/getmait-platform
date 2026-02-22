@@ -20,7 +20,8 @@ import {
   Lock,
   AlertCircle,
   ChevronDown,
-  User
+  User,
+  Utensils
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import ChatWidget from './ChatWidget';
@@ -654,100 +655,206 @@ const App = () => {
 
       {/* CHAT OVERLAY — åbnes via "Chat din bestilling" */}
       {showChat && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/95 backdrop-blur-2xl flex items-end md:items-center justify-center p-0 md:p-6 chat-overlay-in">
-          <div className="bg-[#FDFCFB] w-full max-w-5xl h-[100vh] md:h-[850px] md:rounded-[4.5rem] shadow-[0_80px_160px_-40px_rgba(0,0,0,0.6)] relative flex flex-col md:flex-row overflow-hidden border border-white/20 chat-panel-in">
+        <div className="fixed inset-0 z-[200] chat-overlay-in">
 
-            {/* SIDEBAR */}
-            <div className="hidden md:flex md:w-1/3 bg-[#0F172A] p-12 text-white relative overflow-hidden flex-col justify-between shrink-0 border-r border-white/5">
-              <div className="relative z-10">
-                <div className="w-24 h-24 rounded-[3rem] flex items-center justify-center mb-12 shadow-2xl transform hover:rotate-6 transition-transform" style={{ backgroundColor: brandColor }}>
-                  <ChefHat size={48} className="text-white" />
+          {/* ── MOBIL: ChatWidget-stil (fuld skærm) ── */}
+          <div className="md:hidden flex flex-col h-full bg-white">
+
+            {/* HEADER */}
+            <div style={{ backgroundColor: brandColor }} className="p-6 text-white flex justify-between items-center relative overflow-hidden shrink-0">
+              <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12 scale-150 pointer-events-none">
+                <Utensils size={100} />
+              </div>
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="bg-white p-3.5 rounded-2xl shadow-2xl">
+                  <Sparkles size={24} className="text-orange-500" />
                 </div>
-                <h3 className="text-5xl font-black italic uppercase tracking-tighter leading-[0.95] mb-8">Mait Kitchen Lounge.</h3>
-                <div className="space-y-10">
-                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 hover:bg-white/10 transition-colors">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Sparkles size={16} style={{ color: brandColor }} />
-                      <span className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: brandColor }}>Dagens anbefaling</span>
-                    </div>
-                    <p className="text-sm font-bold italic text-slate-300 leading-relaxed">
-                      {firstPizza ? `Prøv vores ${firstPizza.navn} – ${firstPizza.beskrivelse}` : `Spørg om dagens speciale fra ${store.name}!`}
-                    </p>
-                  </div>
-                  <div className="pt-8 border-t border-white/10 space-y-6">
-                    <div className="flex items-center gap-5">
-                      <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_15px_#22c55e]"></div>
-                      <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 italic">Køkkenet er Online</span>
-                    </div>
-                    <div className="flex items-center gap-5">
-                      <Clock size={20} style={{ color: brandColor }} />
-                      <span className="text-sm font-bold italic text-slate-300 uppercase tracking-widest">{store.waiting_time || 20} min. ventetid</span>
-                    </div>
+                <div>
+                  <h3 className="font-black text-2xl leading-none tracking-tighter uppercase italic">{store.name}</h3>
+                  {store.city && <p className="text-xs opacity-75 mt-0.5">{store.city}</p>}
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-[0_0_12px_rgba(74,222,128,1)]"></span>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-90">Din personlige Mait</p>
                   </div>
                 </div>
               </div>
-              <Pizza className="absolute -bottom-20 -left-20 opacity-5 w-[450px] h-[450px] rotate-12 pointer-events-none" style={{ color: brandColor }} />
+              <button onClick={() => setShowChat(false)} className="hover:bg-white/20 p-2 rounded-full transition-all relative z-10">
+                <X size={24} />
+              </button>
             </div>
 
-            {/* CHAT OMRÅDE */}
-            <div className="flex-1 flex flex-col bg-[#FDFCFB]">
-              <header className="p-8 md:p-10 border-b border-slate-100 flex justify-between items-center bg-white/40 backdrop-blur-md sticky top-0 z-10">
-                <div className="flex items-center gap-4">
-                  <div className="w-3 h-3 rounded-full shadow-[0_0_15px_#f97316]" style={{ backgroundColor: brandColor }}></div>
-                  <span className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-400 italic leading-none">Personlig Concierge</span>
+            {/* KONTAKT BAR */}
+            <div className="bg-slate-50 px-6 py-4 flex justify-around border-b border-slate-100 shadow-inner shrink-0">
+              <a href={`tel:${store.phone_number || store.contact_phone}`} className="flex flex-col items-center gap-1.5 group">
+                <div className="bg-white p-3 rounded-xl shadow-sm group-hover:bg-green-50 group-active:scale-90 transition-all">
+                  <Phone size={18} className="text-slate-400 group-hover:text-green-600" />
                 </div>
-                <button onClick={() => setShowChat(false)} className="p-4 bg-slate-100 rounded-3xl hover:bg-red-50 hover:text-red-600 transition-all text-slate-400 active:scale-90 shadow-sm border border-slate-200/50">
-                  <X size={24} />
-                </button>
-              </header>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ring</span>
+              </a>
+              <a href={`sms:${store.phone_number || store.contact_phone}`} className="flex flex-col items-center gap-1.5 group">
+                <div className="bg-white p-3 rounded-xl shadow-sm group-hover:bg-blue-50 group-active:scale-90 transition-all">
+                  <MessageCircle size={18} className="text-slate-400 group-hover:text-blue-600" />
+                </div>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">SMS</span>
+              </a>
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="bg-red-50 p-3 rounded-xl shadow-sm border border-red-100 animate-pulse">
+                  <Sparkles size={18} className="text-red-600" />
+                </div>
+                <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Chat-ordre</span>
+              </div>
+            </div>
 
-              <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 md:p-12 space-y-8 custom-scrollbar bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
-                {messages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] p-5 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] text-base md:text-xl font-bold italic leading-relaxed shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)] border ${
-                      msg.role === 'user'
-                        ? 'bg-[#0F172A] text-white rounded-tr-none border-[#0F172A]'
-                        : 'bg-white text-slate-800 border-slate-100 rounded-tl-none'
-                    }`}>
-                      {msg.content}
+            {/* BESKEDER */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50/20">
+              {messages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] p-4 rounded-[2rem] text-[15px] leading-relaxed shadow-sm ${
+                    msg.role === 'user'
+                      ? 'bg-slate-800 text-white rounded-tr-none'
+                      : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none font-medium'
+                  }`}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100 rounded-tl-none flex items-center gap-3">
+                    <div className="flex gap-1">
+                      <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce"></span>
+                      <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                      <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                    </div>
+                    <span className="text-xs text-slate-400 font-bold italic">Maiten tænker...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* INPUT */}
+            <div className="p-5 bg-white border-t border-slate-100 shrink-0">
+              <form onSubmit={handleSendMessage} className="flex gap-3">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Hvad skal vi sætte i ovnen, Mait?"
+                  className="flex-1 bg-slate-100 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 outline-none font-medium placeholder:text-slate-400 shadow-inner"
+                  disabled={isLoading}
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  style={{ backgroundColor: brandColor }}
+                  className="p-4 text-white rounded-2xl hover:opacity-90 disabled:opacity-30 transition-all shadow-2xl active:scale-95 flex items-center justify-center min-w-[56px]"
+                >
+                  <Send size={22} />
+                </button>
+              </form>
+              <div className="flex items-center justify-center gap-1.5 mt-4">
+                <p className="text-[10px] text-slate-300 font-black tracking-[0.3em] uppercase">Powered by GetMait</p>
+                <Sparkles size={10} className="text-orange-300" />
+              </div>
+            </div>
+          </div>
+
+          {/* ── DESKTOP: sidebar-overlay ── */}
+          <div className="hidden md:flex h-full bg-slate-900/95 backdrop-blur-2xl items-center justify-center p-6">
+            <div className="bg-[#FDFCFB] w-full max-w-5xl h-[850px] rounded-[4.5rem] shadow-[0_80px_160px_-40px_rgba(0,0,0,0.6)] flex flex-row overflow-hidden border border-white/20 chat-panel-in">
+
+              {/* SIDEBAR */}
+              <div className="w-1/3 bg-[#0F172A] p-12 text-white relative overflow-hidden flex flex-col justify-between shrink-0 border-r border-white/5">
+                <div className="relative z-10">
+                  <div className="w-24 h-24 rounded-[3rem] flex items-center justify-center mb-12 shadow-2xl transform hover:rotate-6 transition-transform" style={{ backgroundColor: brandColor }}>
+                    <ChefHat size={48} className="text-white" />
+                  </div>
+                  <h3 className="text-5xl font-black italic uppercase tracking-tighter leading-[0.95] mb-8">Mait Kitchen Lounge.</h3>
+                  <div className="space-y-10">
+                    <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 hover:bg-white/10 transition-colors">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Sparkles size={16} style={{ color: brandColor }} />
+                        <span className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: brandColor }}>Dagens anbefaling</span>
+                      </div>
+                      <p className="text-sm font-bold italic text-slate-300 leading-relaxed">
+                        {firstPizza ? `Prøv vores ${firstPizza.navn} – ${firstPizza.beskrivelse}` : `Spørg om dagens speciale fra ${store.name}!`}
+                      </p>
+                    </div>
+                    <div className="pt-8 border-t border-white/10 space-y-6">
+                      <div className="flex items-center gap-5">
+                        <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_15px_#22c55e]"></div>
+                        <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 italic">Køkkenet er Online</span>
+                      </div>
+                      <div className="flex items-center gap-5">
+                        <Clock size={20} style={{ color: brandColor }} />
+                        <span className="text-sm font-bold italic text-slate-300 uppercase tracking-widest">{store.waiting_time || 20} min. ventetid</span>
+                      </div>
                     </div>
                   </div>
-                ))}
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="flex items-center gap-5 bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-xl">
-                      <Loader2 className="animate-spin" size={28} style={{ color: brandColor }} />
-                      <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-300 italic leading-none">Mait forbereder svaret...</span>
-                    </div>
-                  </div>
-                )}
+                </div>
+                <Pizza className="absolute -bottom-20 -left-20 opacity-5 w-[450px] h-[450px] rotate-12 pointer-events-none" style={{ color: brandColor }} />
               </div>
 
-              <div className="p-4 md:p-10 bg-white border-t border-slate-100 shrink-0">
-                <form onSubmit={handleSendMessage} className="flex gap-3 mb-4 md:gap-4 md:mb-6 max-w-4xl mx-auto">
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Hvad kan jeg sætte i gang for dig?"
-                    className="flex-1 bg-[#F9FAFB] border-2 border-slate-200 rounded-[3rem] px-5 py-4 text-base md:px-8 md:py-6 md:text-xl focus:bg-white outline-none font-bold placeholder:text-slate-200 shadow-inner italic transition-all"
-                    onFocus={e => e.target.style.borderColor = brandColor}
-                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                    disabled={isLoading}
-                  />
-                  <button type="submit" disabled={isLoading || !input.trim()} className="p-4 md:p-6 rounded-[3rem] text-white shadow-[0_25px_50px_-12px_rgba(234,88,12,0.4)] hover:opacity-90 hover:scale-105 transition-all active:scale-90 flex items-center justify-center disabled:opacity-30 shrink-0" style={{ backgroundColor: brandColor }}>
-                    <Send size={24} className="md:hidden" />
-                    <Send size={36} className="hidden md:block" />
+              {/* CHAT OMRÅDE */}
+              <div className="flex-1 flex flex-col bg-[#FDFCFB]">
+                <header className="p-10 border-b border-slate-100 flex justify-between items-center bg-white/40 backdrop-blur-md sticky top-0 z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="w-3 h-3 rounded-full shadow-[0_0_15px_#f97316]" style={{ backgroundColor: brandColor }}></div>
+                    <span className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-400 italic leading-none">Personlig Concierge</span>
+                  </div>
+                  <button onClick={() => setShowChat(false)} className="p-4 bg-slate-100 rounded-3xl hover:bg-red-50 hover:text-red-600 transition-all text-slate-400 active:scale-90 shadow-sm border border-slate-200/50">
+                    <X size={24} />
                   </button>
-                </form>
-                <div className="flex justify-center gap-3 md:gap-8 opacity-30">
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><Lock size={12} /> Krypteret</div>
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><Zap size={12} /> Hurtig AI</div>
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><ChefHat size={12} /> Køkken-klar</div>
+                </header>
+
+                <div ref={scrollRef} className="flex-1 overflow-y-auto p-12 space-y-8 custom-scrollbar bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
+                  {messages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] p-8 rounded-[3.5rem] text-xl font-bold italic leading-relaxed shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)] border ${
+                        msg.role === 'user'
+                          ? 'bg-[#0F172A] text-white rounded-tr-none border-[#0F172A]'
+                          : 'bg-white text-slate-800 border-slate-100 rounded-tl-none'
+                      }`}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="flex items-center gap-5 bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-xl">
+                        <Loader2 className="animate-spin" size={28} style={{ color: brandColor }} />
+                        <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-300 italic leading-none">Mait forbereder svaret...</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-10 bg-white border-t border-slate-100 shrink-0">
+                  <form onSubmit={handleSendMessage} className="flex gap-4 mb-6 max-w-4xl mx-auto">
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="Hvad kan jeg sætte i gang for dig?"
+                      className="flex-1 bg-[#F9FAFB] border-2 border-slate-200 rounded-[3rem] px-8 py-6 text-xl focus:bg-white outline-none font-bold placeholder:text-slate-200 shadow-inner italic transition-all"
+                      onFocus={e => e.target.style.borderColor = brandColor}
+                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                      disabled={isLoading}
+                    />
+                    <button type="submit" disabled={isLoading || !input.trim()} className="p-6 rounded-[3rem] text-white shadow-[0_25px_50px_-12px_rgba(234,88,12,0.4)] hover:opacity-90 hover:scale-105 transition-all active:scale-90 flex items-center justify-center disabled:opacity-30 shrink-0" style={{ backgroundColor: brandColor }}>
+                      <Send size={36} />
+                    </button>
+                  </form>
+                  <div className="flex justify-center gap-8 opacity-30">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><Lock size={12} /> Krypteret</div>
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><Zap size={12} /> Hurtig AI</div>
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><ChefHat size={12} /> Køkken-klar</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
         </div>
       )}
 
