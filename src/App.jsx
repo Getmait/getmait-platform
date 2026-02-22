@@ -646,23 +646,17 @@ const App = () => {
                 </div>
               )}
               {store.contact_phone && (
-                <div className="flex items-start gap-3">
-                  <UserCheck size={18} style={{ color: brandColor }} className="shrink-0 mt-0.5" />
-                  <div>
-                    <a href={`tel:${store.contact_phone}`} className="hover:text-orange-400 transition-colors block leading-tight">
-                      {store.contact_phone}
-                    </a>
-                    <span className="text-[10px] font-normal not-italic text-white/35 uppercase tracking-widest">Personlig betjening</span>
-                  </div>
+                <div className="flex items-center gap-3">
+                  <UserCheck size={18} style={{ color: brandColor }} className="shrink-0" />
+                  <a href={`tel:${store.contact_phone}`} className="hover:text-orange-400 transition-colors">
+                    {store.contact_phone}
+                  </a>
                 </div>
               )}
               {store.cvr_number && (
-                <div className="flex items-start gap-3">
-                  <Building2 size={18} style={{ color: brandColor }} className="shrink-0 mt-0.5" />
-                  <div>
-                    <span className="block leading-tight">{store.cvr_number}</span>
-                    <span className="text-[10px] font-normal not-italic text-white/35 uppercase tracking-widest">CVR-nr.</span>
-                  </div>
+                <div className="flex items-center gap-3">
+                  <Building2 size={18} style={{ color: brandColor }} className="shrink-0" />
+                  <span>CVR {store.cvr_number}</span>
                 </div>
               )}
             </div>
