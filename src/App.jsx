@@ -568,8 +568,13 @@ const App = () => {
                 <div className="bg-white/20 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6">
                   <Check size={40} strokeWidth={4} />
                 </div>
-                <h3 className="text-3xl font-black italic uppercase mb-2">Velkommen i klubben!</h3>
-                <p className="text-orange-100 font-medium italic">Du har nu modtaget en bekræftelses-SMS.</p>
+                <h3 className="text-3xl font-black italic uppercase mb-2">
+                  Hej {name.trim().split(' ')[0]}! 🎉
+                </h3>
+                <p className="text-white/80 font-medium italic leading-relaxed">
+                  Du er nu en del af {store.name}-familien.<br />
+                  Vi sender kun de bedste tilbud — lovet.
+                </p>
               </div>
             ) : (
               <form onSubmit={handleSubscribe} className="bg-[#FAFAFA] p-7 md:p-14 rounded-[60px] border border-slate-100 shadow-xl space-y-6 relative overflow-hidden">
