@@ -470,7 +470,7 @@ const App = () => {
                     <div className="space-y-1 max-w-[68%]">
                       <div className="flex items-baseline gap-1.5 md:gap-2 mb-1">
                         <span className="text-[15px] md:text-[20px] font-black italic shrink-0" style={{ color: brandColor }}>
-                          {String(index + 1).padStart(2, '0')}.
+                          {item.nr != null ? String(item.nr).padStart(2, '0') : String(index + 1).padStart(2, '0')}.
                         </span>
                         <h3 className="font-black text-[17px] md:text-[22px] italic text-slate-800 uppercase leading-tight md:leading-none">{item.navn}</h3>
                       </div>
