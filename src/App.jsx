@@ -322,16 +322,16 @@ const App = () => {
       </nav>
 
       {/* HERO */}
-      <section className="pt-48 pb-24 px-6 max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center text-left">
-        <div className="space-y-8 text-left">
+      <section className="pt-24 pb-12 md:pt-48 md:pb-24 px-6 max-w-6xl mx-auto grid md:grid-cols-2 gap-8 md:gap-12 items-center text-left">
+        <div className="space-y-6 md:space-y-8 text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.15em] italic">
             <Zap size={10} className="fill-orange-500 text-orange-500" /> Ingen telefonkø hos {store.name}
           </div>
-          <h1 className="text-[85px] md:text-[100px] lg:text-[120px] font-black leading-[0.82] uppercase italic tracking-tighter text-slate-900">
+          <h1 className="text-[54px] sm:text-[72px] md:text-[100px] lg:text-[120px] font-black leading-[0.82] uppercase italic tracking-tighter text-slate-900">
             Din Pizza. <br />
-            <span className="underline decoration-[12px] underline-offset-[14px]" style={{ color: brandColor }}>Din Mait.</span>
+            <span className="underline decoration-[6px] underline-offset-[8px] md:decoration-[12px] md:underline-offset-[14px]" style={{ color: brandColor }}>Din Mait.</span>
           </h1>
-          <p className="text-slate-500 text-xl max-w-sm font-medium italic leading-relaxed pt-4">
+          <p className="text-slate-500 text-base md:text-xl max-w-sm font-medium italic leading-relaxed pt-2 md:pt-4">
             Smagen af {store.name}, nu med hurtigere bestilling. Ring direkte til din Mait, eller start en chat på få sekunder.
           </p>
           <div className="flex flex-col gap-4 pt-4 max-w-sm">
@@ -360,23 +360,23 @@ const App = () => {
               alt={store.name}
             />
           </div>
-          <div className="absolute -bottom-4 -left-8 bg-white/95 backdrop-blur-md p-6 rounded-[35px] flex items-center gap-5 shadow-2xl border border-slate-50 z-10">
-            <div className="h-6 w-6 rounded-full bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.5)] flex items-center justify-center text-white">
-              <Pizza size={12} />
+          <div className="absolute -bottom-4 left-2 md:-left-8 bg-white/95 backdrop-blur-md p-4 md:p-6 rounded-[28px] md:rounded-[35px] flex items-center gap-3 md:gap-5 shadow-2xl border border-slate-50 z-10">
+            <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.5)] flex items-center justify-center text-white">
+              <Pizza size={10} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 italic mb-0.5 leading-none">Ovnene er varme</p>
-              <p className="font-black text-slate-800 tracking-tight italic uppercase text-lg leading-none">{store.waiting_time || 20} min ventetid</p>
+              <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 italic mb-0.5 leading-none">Ovnene er varme</p>
+              <p className="font-black text-slate-800 tracking-tight italic uppercase text-base md:text-lg leading-none">{store.waiting_time || 20} min ventetid</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* MENU */}
-      <section id="menu" className="bg-white py-32 px-6 rounded-t-[80px] shadow-[0_-30px_60px_rgba(0,0,0,0.02)] -mt-12">
+      <section id="menu" className="bg-white py-16 md:py-32 px-6 rounded-t-[60px] md:rounded-t-[80px] shadow-[0_-30px_60px_rgba(0,0,0,0.02)] -mt-12">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-12">
-            <h2 className="text-6xl font-black italic tracking-tighter uppercase mb-2">Menukortet</h2>
+          <div className="mb-8 md:mb-12">
+            <h2 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase mb-2">Menukortet</h2>
             <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">
               Håndplukket menu fra {store.name} i {store.city || 'Danmark'}.
             </p>
@@ -404,19 +404,19 @@ const App = () => {
                 {displayedItems.map((item, index) => (
                   <div
                     key={item.id}
-                    className="p-10 rounded-[48px] border border-slate-100 flex justify-between items-center bg-[#FAFAFA]/50 hover:bg-white hover:shadow-2xl hover:border-orange-200 transition-all group cursor-pointer"
+                    className="p-5 md:p-10 rounded-[32px] md:rounded-[48px] border border-slate-100 flex justify-between items-center bg-[#FAFAFA]/50 hover:bg-white hover:shadow-2xl hover:border-orange-200 transition-all group cursor-pointer"
                   >
-                    <div className="space-y-1 max-w-[70%]">
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <span className="text-[20px] font-black italic" style={{ color: brandColor }}>
+                    <div className="space-y-1 max-w-[68%]">
+                      <div className="flex items-baseline gap-1.5 md:gap-2 mb-1">
+                        <span className="text-[15px] md:text-[20px] font-black italic shrink-0" style={{ color: brandColor }}>
                           {String(index + 1).padStart(2, '0')}.
                         </span>
-                        <h3 className="font-black text-[22px] italic text-slate-800 uppercase leading-none">{item.navn}</h3>
+                        <h3 className="font-black text-[17px] md:text-[22px] italic text-slate-800 uppercase leading-tight md:leading-none">{item.navn}</h3>
                       </div>
-                      <p className="text-slate-400 text-sm italic font-medium">{item.beskrivelse}</p>
+                      <p className="text-slate-400 text-xs md:text-sm italic font-medium">{item.beskrivelse}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="text-[28px] font-black italic whitespace-nowrap" style={{ color: brandColor }}>{item.pris} kr.</span>
+                      <span className="text-[20px] md:text-[28px] font-black italic whitespace-nowrap" style={{ color: brandColor }}>{item.pris} kr.</span>
                     </div>
                   </div>
                 ))}
@@ -440,11 +440,11 @@ const App = () => {
       </section>
 
       {/* MODERNE SERVICE */}
-      <section className="py-32 px-6 bg-slate-50">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-20 items-center">
-          <div className="space-y-6">
+      <section className="py-16 md:py-32 px-6 bg-slate-50">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 md:gap-20 items-center">
+          <div className="space-y-5 md:space-y-6">
             <div className="font-black text-xs uppercase tracking-[0.3em] italic" style={{ color: brandColor }}>Moderne Service</div>
-            <h2 className="text-6xl md:text-7xl font-black italic tracking-tighter leading-[0.9] uppercase text-slate-900">
+            <h2 className="text-[36px] md:text-6xl lg:text-7xl font-black italic tracking-tighter leading-[0.9] uppercase text-slate-900">
               Spørg din Mait <br /> hos {store.name}
             </h2>
             <p className="text-slate-500 text-xl font-medium italic leading-relaxed max-w-md pt-4">
@@ -458,12 +458,12 @@ const App = () => {
             </div>
           </div>
 
-          <div className="bg-[#0B0F19] p-16 rounded-[65px] text-white relative overflow-hidden shadow-2xl group">
+          <div className="bg-[#0B0F19] p-8 md:p-16 rounded-[40px] md:rounded-[65px] text-white relative overflow-hidden shadow-2xl group">
             <div className="relative z-10">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-10 shadow-lg rotate-3 group-hover:rotate-0 transition-transform" style={{ backgroundColor: brandColor }}>
-                <MessageCircle size={28} className="fill-white" />
+              <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center mb-7 md:mb-10 shadow-lg rotate-3 group-hover:rotate-0 transition-transform" style={{ backgroundColor: brandColor }}>
+                <MessageCircle size={24} className="fill-white" />
               </div>
-              <blockquote className="text-[30px] font-black italic mb-10 tracking-tight leading-[1.2]">
+              <blockquote className="text-xl md:text-[30px] font-black italic mb-7 md:mb-10 tracking-tight leading-[1.2]">
                 "Hej Mait, jeg vil gerne have en Roma klar til kl. 18.00 og en Fanta – tak!"
               </blockquote>
               <div className="flex items-center gap-3">
@@ -479,14 +479,14 @@ const App = () => {
       </section>
 
       {/* SMS KUNDEKLUB */}
-      <section id="kundeklub" className="py-32 px-6 bg-white overflow-hidden border-t border-slate-50">
-        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+      <section id="kundeklub" className="py-16 md:py-32 px-6 bg-white overflow-hidden border-t border-slate-50">
+        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-10 md:gap-16">
           <div className="lg:w-1/2 space-y-8">
             <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-orange-50 border border-orange-100" style={{ color: brandColor }}>
               <Smartphone size={16} />
               <span className="text-[10px] font-black uppercase tracking-widest italic leading-none">Bliv en del af {store.name}-familien</span>
             </div>
-            <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-[0.9] text-slate-900">
+            <h2 className="text-4xl md:text-5xl lg:text-7xl font-black italic uppercase tracking-tighter leading-[0.9] text-slate-900">
               Få tilbud via <br /><span style={{ color: brandColor }}>SMS-Klubben.</span>
             </h2>
             <p className="text-slate-500 text-xl font-medium italic leading-relaxed max-w-md">
@@ -504,7 +504,7 @@ const App = () => {
                 <p className="text-orange-100 font-medium italic">Du har nu modtaget en bekræftelses-SMS.</p>
               </div>
             ) : (
-              <form onSubmit={handleSubscribe} className="bg-[#FAFAFA] p-10 md:p-14 rounded-[60px] border border-slate-100 shadow-xl space-y-8 relative overflow-hidden">
+              <form onSubmit={handleSubscribe} className="bg-[#FAFAFA] p-7 md:p-14 rounded-[60px] border border-slate-100 shadow-xl space-y-8 relative overflow-hidden">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 italic block">Dit Telefonnummer</label>
                   <input
@@ -548,8 +548,8 @@ const App = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-[#0B0F19] pt-24 pb-12 px-6 text-white border-t border-white/5">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16">
+      <footer className="bg-[#0B0F19] pt-12 md:pt-24 pb-12 px-6 text-white border-t border-white/5">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16">
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <Pizza style={{ color: brandColor }} size={32} />
@@ -667,7 +667,7 @@ const App = () => {
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 md:p-12 space-y-8 custom-scrollbar bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
                 {messages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[75%] p-8 md:p-10 rounded-[3.5rem] text-xl font-bold italic leading-relaxed shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)] border ${
+                    <div className={`max-w-[80%] p-5 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] text-base md:text-xl font-bold italic leading-relaxed shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)] border ${
                       msg.role === 'user'
                         ? 'bg-[#0F172A] text-white rounded-tr-none border-[#0F172A]'
                         : 'bg-white text-slate-800 border-slate-100 rounded-tl-none'
@@ -686,23 +686,24 @@ const App = () => {
                 )}
               </div>
 
-              <div className="p-6 md:p-10 bg-white border-t border-slate-100 shrink-0">
-                <form onSubmit={handleSendMessage} className="flex gap-4 mb-6 max-w-4xl mx-auto">
+              <div className="p-4 md:p-10 bg-white border-t border-slate-100 shrink-0">
+                <form onSubmit={handleSendMessage} className="flex gap-3 mb-4 md:gap-4 md:mb-6 max-w-4xl mx-auto">
                   <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Hvad kan jeg sætte i gang for dig?"
-                    className="flex-1 bg-[#F9FAFB] border-2 border-slate-200 rounded-[3rem] px-8 py-6 text-xl focus:bg-white outline-none font-bold placeholder:text-slate-200 shadow-inner italic transition-all"
+                    className="flex-1 bg-[#F9FAFB] border-2 border-slate-200 rounded-[3rem] px-5 py-4 text-base md:px-8 md:py-6 md:text-xl focus:bg-white outline-none font-bold placeholder:text-slate-200 shadow-inner italic transition-all"
                     onFocus={e => e.target.style.borderColor = brandColor}
                     onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                     disabled={isLoading}
                   />
-                  <button type="submit" disabled={isLoading || !input.trim()} className="p-6 rounded-[3rem] text-white shadow-[0_25px_50px_-12px_rgba(234,88,12,0.4)] hover:opacity-90 hover:scale-105 transition-all active:scale-90 flex items-center justify-center disabled:opacity-30" style={{ backgroundColor: brandColor }}>
-                    <Send size={36} />
+                  <button type="submit" disabled={isLoading || !input.trim()} className="p-4 md:p-6 rounded-[3rem] text-white shadow-[0_25px_50px_-12px_rgba(234,88,12,0.4)] hover:opacity-90 hover:scale-105 transition-all active:scale-90 flex items-center justify-center disabled:opacity-30 shrink-0" style={{ backgroundColor: brandColor }}>
+                    <Send size={24} className="md:hidden" />
+                    <Send size={36} className="hidden md:block" />
                   </button>
                 </form>
-                <div className="flex justify-center gap-8 opacity-30">
+                <div className="flex justify-center gap-3 md:gap-8 opacity-30">
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><Lock size={12} /> Krypteret</div>
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><Zap size={12} /> Hurtig AI</div>
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-400"><ChefHat size={12} /> Køkken-klar</div>
