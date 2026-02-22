@@ -1,73 +1,91 @@
-import React, { useState, useEffect } from 'react';
-import { Pizza, MessageSquare, Phone, MapPin, Clock, ChevronRight, Zap, AlertCircle, Volume2, ChevronDown, ChevronUp, Beer, Utensils, Star, ShieldCheck, Sparkles } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import {
+  Pizza,
+  Clock,
+  MapPin,
+  Phone,
+  ChevronRight,
+  Utensils,
+  MessageCircle,
+  X,
+  Sparkles,
+  ArrowRight,
+  Zap,
+  Plus,
+  PhoneCall,
+  MessageSquare,
+  Smartphone,
+  ShieldCheck,
+  Check,
+  Send,
+  Loader2,
+  ChefHat,
+  Beer,
+  Lock,
+  ThumbsUp,
+  AlertCircle,
+  Volume2,
+  ChevronDown
+} from 'lucide-react';
 import { supabase } from './lib/supabase';
 import ChatWidget from './ChatWidget';
 
-/**
- * GETMAIT PLATFORM - PUNCHY HEADLINE EDITION
- * Brand: Getmait.dk
- * Headline: "Din Pizza. Din Mait." (Kort, præcis og sigende)
- */
-
 const App = () => {
+  // --- SUPABASE DATA ---
   const [loading, setLoading] = useState(true);
   const [store, setStore] = useState(null);
   const [menu, setMenu] = useState([]);
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [isMenuExpanded, setIsMenuExpanded] = useState(false);
   const [error, setError] = useState(null);
 
+  // --- UI STATE ---
+  const [activeCategory, setActiveCategory] = useState('SE ALT');
+  const [scrolled, setScrolled] = useState(false);
+  const [isMenuExpanded, setIsMenuExpanded] = useState(false);
+
+  // SMS Kundeklub state
+  const [phone, setPhone] = useState('');
+  const [gdprAccepted, setGdprAccepted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  // --- DATA FETCHING ---
   useEffect(() => {
     const loadData = async () => {
-      // Extract slug from hostname (subdomain eller domæne)
       const hostname = window.location.hostname;
       const isIpAddress = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
 
       let slug;
       if (hostname.includes('getmait.dk')) {
-        // Extract subdomain from *.getmait.dk (e.g., napoli-pizza.getmait.dk -> napoli-pizza)
         slug = hostname.split('.getmait.dk')[0];
       } else if (hostname.includes('sslip.io')) {
-        // Extract subdomain from sslip.io
         slug = hostname.split('.')[0];
       } else if (hostname.includes('localhost') || isIpAddress) {
-        // Default for localhost and IP addresses
-        slug = 'napoli-esbjerg';
+        slug = 'napoli';
       } else {
-        // Fallback: extract first part
         slug = hostname.split('.')[0];
       }
 
       try {
         if (!supabase) {
-          setError('Manglende Supabase-konfiguration. Tjek VITE_SUPABASE_URL og VITE_SUPABASE_ANON_KEY.');
+          setError('Manglende Supabase-konfiguration.');
           setLoading(false);
           return;
         }
 
-        // Hent butiksinformation fra Supabase
         const { data: storeData, error: storeError } = await supabase
           .from('stores')
           .select('*')
           .eq('subdomain', slug)
           .single();
 
-        if (storeError) {
-          console.error('Store error:', storeError);
+        if (storeError || !storeData) {
           setError('Kunne ikke finde pizzaria. Kontakt support@getmait.dk');
-          setLoading(false);
-          return;
-        }
-
-        if (!storeData) {
-          setError('Pizzaria ikke fundet.');
           setLoading(false);
           return;
         }
 
         setStore(storeData);
 
-        // Hent menu items fra Supabase
         const { data: menuData, error: menuError } = await supabase
           .from('menu')
           .select('*')
@@ -78,9 +96,6 @@ const App = () => {
 
         if (menuError) {
           console.error('Menu error:', menuError);
-          setError('Kunne ikke hente menukort.');
-          setLoading(false);
-          return;
         }
 
         setMenu(menuData || []);
@@ -95,8 +110,81 @@ const App = () => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // --- MENU LOGIK ---
+  const categories = useMemo(() => [...new Set(menu.map(item => item.kategori))], [menu]);
+  const categoryLabels = ['SE ALT', ...categories.map(c => c.toUpperCase())];
+
+  const currentItems = useMemo(() => {
+    if (activeCategory === 'SE ALT') return menu;
+    return menu.filter(item => item.kategori.toUpperCase() === activeCategory);
+  }, [activeCategory, menu]);
+
+  const displayedItems = isMenuExpanded ? currentItems : currentItems.slice(0, 6);
+
+  // --- ÅBNINGSTIDER HJÆLPER ---
+  const formatOpeningHours = (hours) => {
+    if (!hours) return null;
+    const dayMap = {
+      monday: 'Man', tuesday: 'Tir', wednesday: 'Ons',
+      thursday: 'Tor', friday: 'Fre', saturday: 'Lør', sunday: 'Søn'
+    };
+    // Gruppér dage med samme tider
+    const groups = [];
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    days.forEach(day => {
+      if (!hours[day]) return;
+      const timeStr = `${hours[day].open} - ${hours[day].close}`;
+      const last = groups[groups.length - 1];
+      if (last && last.time === timeStr) {
+        last.days.push(dayMap[day]);
+      } else {
+        groups.push({ days: [dayMap[day]], time: timeStr });
+      }
+    });
+    return groups.map(g => ({
+      label: g.days.length > 1 ? `${g.days[0]} - ${g.days[g.days.length - 1]}` : g.days[0],
+      time: g.time
+    }));
+  };
+
+  // --- SMS KUNDEKLUB ---
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!gdprAccepted) return;
+    setIsSubmitting(true);
+    try {
+      // Webhook til n8n for SMS tilmelding
+      await fetch('https://n8n.getmait.dk/webhook/sms-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone,
+          store_id: store?.id,
+          store_name: store?.name,
+          gdpr: true
+        })
+      });
+    } catch (err) {
+      console.error('SMS signup error:', err);
+    }
+    setIsSubmitting(false);
+    setIsSubscribed(true);
+  };
+
+  const scrollToId = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // --- LOADING / ERROR ---
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white font-sans text-left">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white font-sans">
       <div className="w-12 h-12 border-4 border-slate-100 border-t-orange-600 rounded-full animate-spin mb-4"></div>
       <div className="font-black uppercase text-slate-300 italic tracking-[0.2em] text-[10px]">Getmait Platform...</div>
     </div>
@@ -105,120 +193,117 @@ const App = () => {
   if (error) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white font-sans text-center p-6">
       <AlertCircle size={64} className="text-orange-600 mb-4" />
-      <h2 className="text-2xl font-black italic-caps mb-2">Noget gik galt</h2>
+      <h2 className="text-2xl font-black italic mb-2">Noget gik galt</h2>
       <p className="text-slate-500 mb-6">{error}</p>
-      <button
-        onClick={() => window.location.reload()}
-        className="bg-orange-600 text-white px-8 py-3 rounded-full font-bold"
-      >
-        Prøv igen
-      </button>
+      <button onClick={() => window.location.reload()} className="bg-orange-600 text-white px-8 py-3 rounded-full font-bold">Prøv igen</button>
     </div>
   );
 
   const brandColor = store?.primary_color || '#ea580c';
-  const filteredMenu = activeCategory === 'all' ? menu : menu.filter(item => item.kategori === activeCategory);
-  const displayedItems = isMenuExpanded ? filteredMenu : filteredMenu.slice(0, 4);
-
-  // Find unikke kategorier
-  const categories = [...new Set(menu.map(item => item.kategori))];
+  const openingHoursFormatted = formatOpeningHours(store?.opening_hours);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-orange-100 overflow-x-hidden text-left">
-      {/* Navigation */}
-      <nav className="fixed w-full z-50 bg-white/90 backdrop-blur-md py-5 border-b border-slate-100 px-6 text-left">
+    <div className="min-h-screen bg-[#FDFDFD] font-sans text-slate-900 selection:bg-orange-100 text-left">
+
+      {/* NAVIGATION */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-6 py-6 ${scrolled ? 'bg-white/90 backdrop-blur-md border-b border-slate-100 py-4' : 'bg-transparent'}`}>
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2 font-black text-2xl tracking-tighter italic text-slate-900 uppercase">
-            <Pizza style={{ color: brandColor }} size={28} /> {store.name}
+          <div
+            className="flex items-center gap-2 font-black text-2xl tracking-tighter italic text-slate-900 uppercase cursor-pointer"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            <Pizza style={{ color: brandColor }} size={28} strokeWidth={3} />
+            {store.name}
           </div>
-          <div className="flex items-center gap-6">
-             <div className="hidden sm:flex flex-col items-end text-right">
+          <div className="hidden md:flex items-center gap-12">
+            <button onClick={() => scrollToId('menu')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-orange-600 transition-colors italic">Menukort</button>
+            <button onClick={() => scrollToId('kundeklub')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-orange-600 transition-colors italic">SMS-Klub</button>
+          </div>
+          <div className="flex items-center gap-4">
+            {(store.phone_number || store.contact_phone) && (
+              <div className="hidden sm:flex flex-col items-end">
                 <span className="text-[10px] font-black uppercase text-slate-400 italic leading-none mb-1 tracking-widest">Spørg din Mait</span>
-                <a href={`tel:${store.phone_number || store.contact_phone}`} className="text-sm font-extrabold text-slate-900 tracking-tight italic">{store.phone_number || store.contact_phone}</a>
-             </div>
+                <a href={`tel:${store.phone_number || store.contact_phone}`} className="text-sm font-extrabold text-slate-900 tracking-tight italic">
+                  {store.phone_number || store.contact_phone}
+                </a>
+              </div>
+            )}
             <button className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl active:scale-95 transition-transform">Bestil nu</button>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <header className="pt-48 pb-24 px-6 max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center hero-gradient text-left">
-        <div className="text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest mb-6 italic">
-            <Sparkles size={12} className="text-orange-500" /> Ingen telefonkø hos {store.name}
+      {/* HERO */}
+      <section className="pt-48 pb-24 px-6 max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+        <div className="space-y-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.15em] italic">
+            <Zap size={10} className="fill-orange-500 text-orange-500" /> Ingen telefonkø hos {store.name}
           </div>
-          <h1 className="text-7xl md:text-8xl lg:text-9xl font-black leading-[0.85] mb-8 italic-caps text-slate-900 text-left">
+          <h1 className="text-[85px] md:text-[100px] lg:text-[120px] font-black leading-[0.82] uppercase italic tracking-tighter text-slate-900">
             Din Pizza. <br />
-            <span style={{ color: brandColor }} className="underline decoration-8 underline-offset-[12px]">Din Mait.</span>
+            <span className="underline decoration-[12px] underline-offset-[14px]" style={{ color: brandColor }}>Din Mait.</span>
           </h1>
-          <p className="text-slate-500 text-xl mb-10 max-w-sm font-medium italic text-left leading-relaxed">
-            Smagen af {store.name}, nu med hurtigere bestilling. Ring direkte til din Mait, eller send en SMS på få sekunder.
+          <p className="text-slate-500 text-xl max-w-sm font-medium italic leading-relaxed pt-4">
+            Smagen af {store.name}, nu med hurtigere bestilling. Ring direkte til din Mait, eller start en chat på få sekunder.
           </p>
-          <div className="flex flex-col gap-4 text-left">
+          <div className="flex flex-col gap-4 pt-4 max-w-sm">
             <a
               href={`tel:${store.phone_number || store.contact_phone}`}
+              className="text-white px-10 py-5 rounded-[24px] font-black uppercase italic tracking-widest flex items-center justify-center gap-3 shadow-[0_20px_50px_rgba(234,88,12,0.3)] text-base transition-transform hover:scale-[1.02]"
               style={{ backgroundColor: brandColor }}
-              className="text-white px-10 py-5 rounded-[24px] font-bold flex items-center justify-center gap-3 shadow-2xl transition-all hover:brightness-110 active:scale-95 text-lg group w-full sm:w-auto text-left"
             >
-              <Volume2 size={22} /> Ring til din Mait
-              <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              <PhoneCall size={20} /> Ring til din Mait
             </a>
             <a
-              href={`sms:${store.phone_number || store.contact_phone}`}
-              className="bg-white border-2 border-slate-200 text-slate-800 px-10 py-5 rounded-[24px] font-bold flex items-center justify-center gap-3 shadow-sm transition-all hover:bg-slate-50 active:scale-95 text-lg w-full sm:w-auto text-left"
+              href={`sms:${store.sms_phone || store.phone_number || store.contact_phone}`}
+              className="bg-white border-2 border-slate-100 text-slate-800 px-10 py-5 rounded-[24px] font-black uppercase italic tracking-widest flex items-center justify-center gap-3 text-base shadow-sm hover:bg-slate-50 transition-all"
             >
-              <MessageSquare size={22} /> Send SMS Bestilling
+              <MessageSquare size={20} /> Send SMS Bestilling
             </a>
           </div>
         </div>
 
-        <div className="relative hidden md:block text-left">
-          <div className="rounded-[80px] overflow-hidden shadow-2xl rotate-3 border-[16px] border-white bg-slate-100 aspect-square group hover:rotate-0 transition-all duration-700">
+        {/* Hero billede */}
+        <div className="relative group w-full max-w-[500px] hidden md:block">
+          <div className="rounded-[80px] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rotate-3 border-[16px] border-white bg-slate-50 aspect-square transition-all duration-700 ease-out group-hover:scale-105 group-hover:rotate-1 group-hover:shadow-[0_60px_120px_-30px_rgba(0,0,0,0.2)] cursor-pointer relative">
             <img
               src={store.cover_image_url || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=1000'}
-              className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-700"
+              className="w-full h-full object-cover scale-110 transition-transform duration-1000 group-hover:scale-100"
               alt={store.name}
             />
           </div>
-          <div className="absolute -bottom-6 -left-6 bg-white/95 backdrop-blur-md p-6 rounded-[32px] flex items-center gap-4 shadow-2xl border border-slate-50 transition-transform hover:-translate-y-2 text-left">
-            <div className="h-4 w-4 rounded-full bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.5)]"></div>
-            <div className="text-left">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-0.5 italic text-left">Ovnene er varme</p>
-              <p className="font-bold text-slate-800 tracking-tight italic uppercase text-left">{store.waiting_time || 20} min ventetid</p>
+          <div className="absolute -bottom-4 -left-8 bg-white/95 backdrop-blur-md p-6 rounded-[35px] flex items-center gap-5 shadow-2xl border border-slate-50 z-10">
+            <div className="h-6 w-6 rounded-full bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.5)] flex items-center justify-center text-white">
+              <Pizza size={12} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 italic mb-0.5 leading-none">Ovnene er varme</p>
+              <p className="font-black text-slate-800 tracking-tight italic uppercase text-lg leading-none">{store.waiting_time || 20} min ventetid</p>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Menu Section */}
-      <section className="bg-white py-32 px-6 rounded-t-[80px] shadow-[0_-20px_50px_rgba(0,0,0,0.02)] -mt-12 text-left">
-        <div className="max-w-6xl mx-auto text-left">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8 text-left">
-            <div className="text-left">
-              <h2 className="text-5xl font-black italic-caps mb-2 text-left tracking-tighter">Menukortet</h2>
-              <p className="text-slate-400 font-medium italic text-left leading-relaxed">Håndplukket menu fra {store.name} i {store.city || 'Danmark'}.</p>
-            </div>
-            <div className="flex flex-wrap gap-3 text-left">
+      {/* MENU */}
+      <section id="menu" className="bg-white py-32 px-6 rounded-t-[80px] shadow-[0_-30px_60px_rgba(0,0,0,0.02)] -mt-12">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-12">
+            <h2 className="text-6xl font-black italic tracking-tighter uppercase mb-2">Menukortet</h2>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">
+              Håndplukket menu fra {store.name} i {store.city || 'Danmark'}.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3 mb-12">
+            {categoryLabels.map((cat) => (
               <button
-                onClick={() => { setActiveCategory('all'); setIsMenuExpanded(false); }}
-                style={{ backgroundColor: activeCategory === 'all' ? brandColor : '#fff', color: activeCategory === 'all' ? '#fff' : '#94a3b8' }}
-                className={`px-8 py-4 rounded-full text-xs font-black uppercase tracking-widest italic shadow-sm flex items-center gap-2 transition-all ${activeCategory !== 'all' ? 'border border-slate-200' : ''}`}
+                key={cat}
+                onClick={() => { setActiveCategory(cat); setIsMenuExpanded(false); }}
+                className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] italic transition-all border ${activeCategory === cat ? 'text-white border-transparent shadow-xl' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}`}
+                style={activeCategory === cat ? { backgroundColor: brandColor } : {}}
               >
-                <Utensils size={16} /> Se Alt
+                {cat}
               </button>
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => { setActiveCategory(cat); setIsMenuExpanded(false); }}
-                  style={{ backgroundColor: activeCategory === cat ? brandColor : '#fff', color: activeCategory === cat ? '#fff' : '#94a3b8' }}
-                  className={`px-8 py-4 rounded-full text-xs font-black uppercase tracking-widest italic shadow-sm flex items-center gap-2 transition-all ${activeCategory !== cat ? 'border border-slate-200' : ''}`}
-                >
-                  {cat === 'drinks' && <Beer size={16} />}
-                  {cat === 'pizza' && <Pizza size={16} />}
-                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
 
           {displayedItems.length === 0 ? (
@@ -227,25 +312,29 @@ const App = () => {
             </div>
           ) : (
             <>
-              <div className="grid md:grid-cols-2 gap-8 text-left transition-all duration-500">
-                {displayedItems.map(item => (
-                  <div key={item.id} className="p-10 rounded-[48px] border border-slate-100 flex justify-between items-center bg-slate-50/30 hover:bg-white hover:border-slate-300 hover:shadow-xl transition-all duration-300 group cursor-default text-left">
-                    <div className="max-w-[70%] text-left">
-                      <div className="flex items-center gap-2 mb-1">
-                         <h3 className="font-black text-2xl italic-caps text-slate-800 group-hover:text-orange-600 transition-colors text-left">{item.navn}</h3>
-                         {item.is_popular && <Star size={14} className="text-orange-400 fill-orange-400" />}
+              <div className="grid md:grid-cols-2 gap-8">
+                {displayedItems.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="p-10 rounded-[48px] border border-slate-100 flex justify-between items-center bg-[#FAFAFA]/50 hover:bg-white hover:shadow-2xl hover:border-orange-200 transition-all group cursor-pointer"
+                  >
+                    <div className="space-y-1 max-w-[70%]">
+                      <div className="flex items-baseline gap-2 mb-1">
+                        <span className="text-[20px] font-black italic" style={{ color: brandColor }}>
+                          {String(index + 1).padStart(2, '0')}.
+                        </span>
+                        <h3 className="font-black text-[22px] italic text-slate-800 uppercase leading-none">{item.navn}</h3>
                       </div>
-                      <p className="text-slate-400 text-sm italic font-medium leading-relaxed text-left">{item.beskrivelse}</p>
+                      <p className="text-slate-400 text-sm italic font-medium">{item.beskrivelse}</p>
                     </div>
-                    <div className="text-right flex flex-col items-end text-left">
-                      <span style={{ color: brandColor }} className="text-3xl font-black tabular-nums tracking-tighter italic">{item.pris} kr.</span>
-                      <div className="h-1 w-6 bg-slate-100 rounded-full mt-2 group-hover:w-12 transition-all"></div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[28px] font-black italic whitespace-nowrap" style={{ color: brandColor }}>{item.pris} kr.</span>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {filteredMenu.length > 4 && (
+              {currentItems.length > 6 && (
                 <div className="mt-16 flex justify-center">
                   <button onClick={() => setIsMenuExpanded(!isMenuExpanded)} className="flex flex-col items-center gap-3 group transition-all">
                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 group-hover:text-orange-600 italic">
@@ -262,84 +351,188 @@ const App = () => {
         </div>
       </section>
 
-      {/* Feature Section */}
-      <section className="py-32 px-6 bg-slate-50 text-left">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-20 items-center text-left">
-            <div className="text-left">
-                <div className="text-orange-600 font-black italic-caps text-sm tracking-widest mb-4">MODERNE SERVICE</div>
-                <h2 className="text-5xl md:text-6xl font-black italic-caps mb-8 text-left italic tracking-tighter leading-none">Spørg din Mait <br/> hos {store.name}</h2>
-                <p className="text-slate-500 text-lg mb-10 font-medium italic text-left leading-relaxed">
-                    Glem robot-stemmer og ventetid. Din Mait kender menukortet ud og ind og husker dine præferencer fra sidst. <br/><br/>
-                    Bestil med stemmen eller en SMS – det er den hurtigste vej fra sult til servering.
+      {/* MODERNE SERVICE */}
+      <section className="py-32 px-6 bg-slate-50">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-20 items-center">
+          <div className="space-y-6">
+            <div className="font-black text-xs uppercase tracking-[0.3em] italic" style={{ color: brandColor }}>Moderne Service</div>
+            <h2 className="text-6xl md:text-7xl font-black italic tracking-tighter leading-[0.9] uppercase text-slate-900">
+              Spørg din Mait <br /> hos {store.name}
+            </h2>
+            <p className="text-slate-500 text-xl font-medium italic leading-relaxed max-w-md pt-4">
+              Glem robot-stemmer og ventetid. Din Mait kender menukortet ud og ind og husker dine præferencer fra sidst.
+              <br /><br />
+              Bestil med stemmen eller en SMS – det er den hurtigste vej fra sult til servering.
+            </p>
+            <div className="flex items-center gap-4 pt-4">
+              <div className="h-12 w-12 rounded-full bg-white shadow-md flex items-center justify-center" style={{ color: brandColor }}>
+                <Zap size={20} fill="currentColor" />
+              </div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400 italic">Intelligent digital ekspedition</p>
+            </div>
+          </div>
+
+          <div className="bg-[#0B0F19] p-16 rounded-[65px] text-white relative overflow-hidden shadow-2xl group">
+            <div className="relative z-10">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-10 shadow-lg rotate-3 group-hover:rotate-0 transition-transform" style={{ backgroundColor: brandColor }}>
+                <MessageCircle size={28} className="fill-white" />
+              </div>
+              <blockquote className="text-[30px] font-black italic mb-10 tracking-tight leading-[1.2]">
+                "Hej Mait, jeg vil gerne have en Roma klar til kl. 18.00 og en Fanta – tak!"
+              </blockquote>
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 italic">
+                  Getmait: Noteret, vi ses kl. 18.00!
                 </p>
-                <div className="flex items-center gap-4 text-left">
-                    <div className="h-12 w-12 rounded-full bg-white shadow-md flex items-center justify-center text-orange-600">
-                        <Zap size={20} fill="currentColor" />
-                    </div>
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-400 italic">Intelligent digital ekspedition</p>
-                </div>
+              </div>
             </div>
-            <div className="bg-slate-900 p-12 rounded-[60px] text-white relative overflow-hidden text-left">
-                <div className="relative z-10 text-left">
-                    <div className="h-12 w-12 rounded-2xl bg-orange-600 flex items-center justify-center mb-8">
-                        <MessageSquare size={24} />
-                    </div>
-                    <blockquote className="text-3xl font-black italic mb-8 tracking-tight text-left leading-relaxed">
-                        "Hej Mait, jeg vil gerne have en Roma klar til kl. 18.00 og en Fanta – tak!"
-                    </blockquote>
-                    <div className="flex items-center gap-3 text-left">
-                        <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">Getmait: Noteret, vi ses kl. 18.00!</p>
-                    </div>
-                </div>
-                <div className="absolute -right-20 -bottom-20 opacity-5 font-black italic-caps text-[200px] pointer-events-none">MAIT</div>
-            </div>
+            <span className="absolute -bottom-10 -right-10 text-[200px] font-black italic text-white/[0.03] pointer-events-none uppercase select-none leading-none">MAIT</span>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-32 px-6 bg-slate-900 text-center text-white">
-        <div className="max-w-xl mx-auto space-y-12 text-center">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <div className="flex items-center gap-2 font-black text-3xl tracking-tighter italic text-white uppercase italic text-center leading-none">
-              <Pizza style={{ color: brandColor }} /> {store.name}
+      {/* SMS KUNDEKLUB */}
+      <section id="kundeklub" className="py-32 px-6 bg-white overflow-hidden border-t border-slate-50">
+        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+          <div className="lg:w-1/2 space-y-8">
+            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-orange-50 border border-orange-100" style={{ color: brandColor }}>
+              <Smartphone size={16} />
+              <span className="text-[10px] font-black uppercase tracking-widest italic leading-none">Bliv en del af {store.name}-familien</span>
             </div>
-            <p className="text-slate-500 text-sm font-medium italic max-w-xs mx-auto text-center">
-              Traditionelt håndværk kombineret med personlig digital service.
+            <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-[0.9] text-slate-900">
+              Få tilbud via <br /><span style={{ color: brandColor }}>SMS-Klubben.</span>
+            </h2>
+            <p className="text-slate-500 text-xl font-medium italic leading-relaxed max-w-md">
+              Tilmeld dig vores eksklusive fordelsklub og modtag hemmelige tilbud, før alle andre. Det er gratis, og vi sender kun det bedste.
             </p>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-center gap-8 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] italic text-center">
-            <div className="flex items-center justify-center gap-2 text-center italic"><MapPin size={14} /> {store.address}</div>
-            <div className="flex items-center justify-center gap-2 text-center italic"><Phone size={14} /> Direkte: {store.phone_number || store.contact_phone}</div>
-          </div>
-
-          <div className="pt-12 border-t border-slate-800 text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-                <span className="text-slate-600 text-[9px] font-black uppercase tracking-[0.6em] leading-none text-center">Powered by</span>
-                <div className="font-black italic text-xs tracking-tighter text-white">GET<span className="text-orange-600">MAIT</span>.dk</div>
-            </div>
-            <div className="text-slate-700 text-[8px] font-bold uppercase text-center italic tracking-widest">
-              CVR: {store.cvr_number} • © 2026 {store.name} • Professional Automation
-            </div>
-            {store.smiley_url && (
-              <div className="mt-4">
-                <a
-                  href={store.smiley_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-slate-500 text-[9px] font-black uppercase tracking-widest hover:text-orange-600 transition-colors"
-                >
-                  <ShieldCheck size={12} /> Se kontrolrapport
-                </a>
+          <div className="lg:w-1/2 w-full">
+            {isSubscribed ? (
+              <div className="p-12 rounded-[50px] text-white text-center shadow-2xl" style={{ backgroundColor: brandColor }}>
+                <div className="bg-white/20 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white">
+                  <Check size={40} strokeWidth={4} />
+                </div>
+                <h3 className="text-3xl font-black italic uppercase mb-2">Velkommen i klubben!</h3>
+                <p className="text-orange-100 font-medium italic">Du har nu modtaget en bekræftelses-SMS.</p>
               </div>
+            ) : (
+              <form onSubmit={handleSubscribe} className="bg-[#FAFAFA] p-10 md:p-14 rounded-[60px] border border-slate-100 shadow-xl space-y-8 relative overflow-hidden">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 italic block">Dit Telefonnummer</label>
+                  <input
+                    required
+                    type="tel"
+                    placeholder="+45 00 00 00 00"
+                    className="w-full bg-white border-2 border-slate-100 rounded-[24px] py-6 px-8 text-xl font-bold outline-none transition-all placeholder:text-slate-200 shadow-inner italic"
+                    style={{ '--tw-ring-color': brandColor }}
+                    onFocus={e => e.target.style.borderColor = brandColor}
+                    onBlur={e => e.target.style.borderColor = ''}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+                <label className="flex items-start gap-4 cursor-pointer group">
+                  <div className="relative mt-1 shrink-0">
+                    <input type="checkbox" required className="peer sr-only" checked={gdprAccepted} onChange={() => setGdprAccepted(!gdprAccepted)} />
+                    <div className="w-6 h-6 border-2 border-slate-200 rounded-lg bg-white transition-all shadow-sm" style={gdprAccepted ? { backgroundColor: brandColor, borderColor: brandColor } : {}}></div>
+                    {gdprAccepted && <Check className="absolute inset-0 text-white w-6 h-6 p-1" strokeWidth={4} />}
+                  </div>
+                  <div className="flex-1 text-xs font-medium italic text-slate-400 leading-relaxed group-hover:text-slate-600 transition-colors">
+                    Jeg giver samtykke til SMS-marketing fra {store.name}. Jeg kan til enhver tid afmelde mig. Læs vores <span className="underline">Privatlivspolitik</span>.
+                  </div>
+                </label>
+                <button
+                  disabled={!gdprAccepted || isSubmitting}
+                  type="submit"
+                  className="w-full text-white py-6 rounded-[24px] font-black uppercase italic tracking-widest text-lg shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-30 disabled:grayscale"
+                  style={{ backgroundColor: brandColor }}
+                >
+                  {isSubmitting ? <Zap className="animate-spin" size={24} /> : <>Tilmeld mig nu <ArrowRight size={24} /></>}
+                </button>
+                <div className="flex items-center justify-center gap-3 opacity-30 pt-2">
+                  <ShieldCheck size={14} />
+                  <span className="text-[10px] font-black uppercase tracking-widest italic">100% GDPR Sikret</span>
+                </div>
+              </form>
             )}
           </div>
         </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-[#0B0F19] pt-24 pb-12 px-6 text-white border-t border-white/5">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16">
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <Pizza style={{ color: brandColor }} size={32} />
+              <div className="font-black text-2xl tracking-tighter italic uppercase leading-none">{store.name}</div>
+            </div>
+            <p className="text-white/60 text-sm font-medium italic leading-relaxed max-w-xs">
+              Traditionelt håndværk kombineret med personlig digital service.
+              {store.city && ` Autentisk smag fra ${store.city}.`}
+            </p>
+            {store.smiley_url && (
+              <a href={store.smiley_url} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-slate-500 text-[9px] font-black uppercase tracking-widest hover:text-orange-600 transition-colors italic">
+                <ShieldCheck size={12} /> Se kontrolrapport
+              </a>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <h4 className="text-[11px] font-black uppercase tracking-[0.25em] italic leading-none" style={{ color: brandColor }}>Åbningstider</h4>
+            <div className="space-y-3 text-sm font-bold italic text-slate-400">
+              {openingHoursFormatted ? openingHoursFormatted.map((row, i) => (
+                <div key={i} className="flex justify-between border-b border-white/5 pb-2">
+                  <span>{row.label}:</span>
+                  <span className="text-white">{row.time}</span>
+                </div>
+              )) : (
+                <p className="text-slate-600 italic text-xs">Kontakt os for åbningstider.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <h4 className="text-[11px] font-black uppercase tracking-[0.25em] italic leading-none" style={{ color: brandColor }}>Kontakt</h4>
+            <div className="space-y-4 text-sm font-bold italic text-white">
+              {store.address && (
+                <div className="flex items-start gap-3">
+                  <MapPin size={18} style={{ color: brandColor }} className="shrink-0 mt-0.5" />
+                  <span>{store.address}</span>
+                </div>
+              )}
+              {(store.phone_number || store.contact_phone) && (
+                <div className="flex items-center gap-3">
+                  <Phone size={18} style={{ color: brandColor }} className="shrink-0" />
+                  <a href={`tel:${store.phone_number || store.contact_phone}`} className="hover:text-orange-400 transition-colors">
+                    {store.phone_number || store.contact_phone}
+                  </a>
+                </div>
+              )}
+              {store.cvr_number && (
+                <div className="flex items-center gap-3 text-slate-600 text-xs">
+                  <span>CVR: {store.cvr_number}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto mt-20 pt-10 border-t border-white/5 text-center text-white/20 text-[10px] font-bold uppercase italic tracking-widest">
+          Powered by GetMait • © 2026 {store.name}
+        </div>
       </footer>
 
-      {/* GetMait AI Chat Widget */}
+      {/* CHAT WIDGET - UÆNDRET */}
       <ChatWidget />
+
+      <style>{`
+        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+        .animate-bounce-slow { animation: bounce-slow 4s infinite ease-in-out; }
+      `}</style>
     </div>
   );
 };
