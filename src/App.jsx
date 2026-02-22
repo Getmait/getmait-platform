@@ -264,7 +264,7 @@ const App = () => {
         </div>
 
         {/* Hero billede */}
-        <div className="relative group w-full max-w-[500px] hidden md:block">
+        <div className="relative group w-full max-w-[500px] mx-auto">
           <div className="rounded-[80px] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rotate-3 border-[16px] border-white bg-slate-50 aspect-square transition-all duration-700 ease-out group-hover:scale-105 group-hover:rotate-1 group-hover:shadow-[0_60px_120px_-30px_rgba(0,0,0,0.2)] cursor-pointer relative">
             <img
               src={store.cover_image_url || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=1000'}
