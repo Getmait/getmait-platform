@@ -4,27 +4,16 @@ import {
   Clock,
   MapPin,
   Phone,
-  ChevronRight,
-  Utensils,
   MessageCircle,
-  X,
   Sparkles,
   ArrowRight,
   Zap,
-  Plus,
   PhoneCall,
   MessageSquare,
   Smartphone,
   ShieldCheck,
   Check,
-  Send,
-  Loader2,
-  ChefHat,
-  Beer,
-  Lock,
-  ThumbsUp,
   AlertCircle,
-  Volume2,
   ChevronDown
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
@@ -234,8 +223,8 @@ const App = () => {
       </nav>
 
       {/* HERO */}
-      <section className="pt-48 pb-24 px-6 max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-        <div className="space-y-8">
+      <section className="pt-48 pb-24 px-6 max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center text-left">
+        <div className="space-y-8 text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.15em] italic">
             <Zap size={10} className="fill-orange-500 text-orange-500" /> Ingen telefonkø hos {store.name}
           </div>
@@ -255,10 +244,10 @@ const App = () => {
               <PhoneCall size={20} /> Ring til din Mait
             </a>
             <a
-              href={`sms:${store.sms_phone || store.phone_number || store.contact_phone}`}
+              href={`sms:${store.phone_number || store.contact_phone}`}
               className="bg-white border-2 border-slate-100 text-slate-800 px-10 py-5 rounded-[24px] font-black uppercase italic tracking-widest flex items-center justify-center gap-3 text-base shadow-sm hover:bg-slate-50 transition-all"
             >
-              <MessageSquare size={20} /> Send SMS Bestilling
+              <MessageSquare size={20} /> Chat din bestilling
             </a>
           </div>
         </div>
@@ -361,8 +350,6 @@ const App = () => {
             </h2>
             <p className="text-slate-500 text-xl font-medium italic leading-relaxed max-w-md pt-4">
               Glem robot-stemmer og ventetid. Din Mait kender menukortet ud og ind og husker dine præferencer fra sidst.
-              <br /><br />
-              Bestil med stemmen eller en SMS – det er den hurtigste vej fra sult til servering.
             </p>
             <div className="flex items-center gap-4 pt-4">
               <div className="h-12 w-12 rounded-full bg-white shadow-md flex items-center justify-center" style={{ color: brandColor }}>
