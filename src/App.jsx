@@ -226,6 +226,13 @@ const App = () => {
   };
 
   // --- SMS KUNDEKLUB ---
+  const normalizePhone = (raw) => {
+    const cleaned = raw.replace(/[\s\-\(\)\.]/g, '');
+    if (cleaned.startsWith('+')) return cleaned;
+    if (cleaned.startsWith('00')) return '+' + cleaned.slice(2);
+    return '+45' + cleaned;
+  };
+
   const handleSubscribe = async (e) => {
     e.preventDefault();
     if (!gdprAccepted) return;
@@ -239,7 +246,7 @@ const App = () => {
       .insert({
         store_id: store.id,
         name: name.trim(),
-        phone: phone.trim(),
+        phone: normalizePhone(phone),
         consent_given: true,
         consent_text: consentText,
         source: 'landing_page'
