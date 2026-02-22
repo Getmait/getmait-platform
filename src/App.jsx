@@ -51,6 +51,10 @@ const App = () => {
   const [featuredCatIndex, setFeaturedCatIndex] = useState(0);
   const [featuredVisible, setFeaturedVisible] = useState(true);
 
+  // Kundeklub state
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [subscribeError, setSubscribeError] = useState('');
+
   // Chat overlay state
   const [showChat, setShowChat] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -226,22 +230,32 @@ const App = () => {
     e.preventDefault();
     if (!gdprAccepted) return;
     setIsSubmitting(true);
-    try {
-      // Webhook til n8n for SMS tilmelding
-      await fetch('https://n8n.getmait.dk/webhook/sms-signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          phone,
-          store_id: store?.id,
-          store_name: store?.name,
-          gdpr: true
-        })
+    setSubscribeError('');
+
+    const consentText = `Jeg giver samtykke til, at ${store.name} må sende mig SMS-marketing. Jeg kan til enhver tid afmelde mig.`;
+
+    const { error } = await supabase
+      .from('kundeklub_members')
+      .insert({
+        store_id: store.id,
+        name: name.trim(),
+        phone: phone.trim(),
+        consent_given: true,
+        consent_text: consentText,
+        source: 'landing_page'
       });
-    } catch (err) {
-      console.error('SMS signup error:', err);
+
+    if (error) {
+      if (error.code === '23505') {
+        setSubscribeError('Du er allerede tilmeldt Kundeklubben fra dette nummer 🎉');
+      } else {
+        console.error('Kundeklub signup error:', error);
+        setSubscribeError('Noget gik galt. Prøv igen eller kontakt os direkte.');
+      }
+      setIsSubmitting(false);
+      return;
     }
+
     setIsSubmitting(false);
     setIsSubscribed(true);
   };
@@ -597,7 +611,8 @@ const App = () => {
                     {gdprAccepted && <Check className="absolute inset-0 text-white w-6 h-6 p-1" strokeWidth={4} />}
                   </div>
                   <div className="flex-1 text-xs font-medium italic text-slate-400 leading-relaxed group-hover:text-slate-600 transition-colors">
-                    Jeg giver samtykke til, at {store.name} må sende mig SMS-marketing. Jeg kan til enhver tid afmelde mig. Læs vores <span className="underline">Privatlivspolitik</span>.
+                    Jeg giver samtykke til, at {store.name} må sende mig SMS-marketing. Jeg kan til enhver tid afmelde mig. Læs vores{' '}
+                    <button type="button" onClick={(e) => { e.preventDefault(); setShowPrivacyPolicy(true); }} className="underline hover:text-orange-600 transition-colors">Privatlivspolitik</button>.
                   </div>
                 </label>
 
@@ -610,6 +625,13 @@ const App = () => {
                 >
                   {isSubmitting ? <Zap className="animate-spin" size={24} /> : <>Tilmeld mig nu <ArrowRight size={24} /></>}
                 </button>
+
+                {subscribeError && (
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                    <AlertCircle size={16} className="shrink-0 text-orange-500" />
+                    <span>{subscribeError}</span>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-center gap-3 opacity-30 pt-2">
                   <ShieldCheck size={14} />
@@ -991,6 +1013,55 @@ const App = () => {
               <p className="text-xs text-slate-400 italic pt-4 border-t border-slate-100">
                 Senest opdateret: {new Date().getFullYear()} • {store.name}
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PRIVATLIVSPOLITIK MODAL — Kundeklub */}
+      {showPrivacyPolicy && (
+        <div className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-6" onClick={() => setShowPrivacyPolicy(false)}>
+          <div className="bg-white w-full sm:max-w-lg max-h-[90vh] rounded-t-[2rem] sm:rounded-[2rem] overflow-hidden flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] italic mb-0.5" style={{ color: brandColor }}>Kundeklub</p>
+                <h2 className="text-lg font-black italic text-slate-900 leading-tight">Privatlivspolitik</h2>
+              </div>
+              <button onClick={() => setShowPrivacyPolicy(false)} className="p-3 bg-slate-100 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all text-slate-400">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-6 space-y-5 text-sm text-slate-600 leading-relaxed">
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">1. Dataansvarlig</h3>
+                <p>{store.name}{store.cvr_number ? ` (CVR: ${store.cvr_number})` : ''}{store.address ? `, ${store.address}` : ''} er dataansvarlig for behandlingen af de personoplysninger, du afgiver ved tilmelding til Kundeklubben.</p>
+                {store.contact_phone && <p>Kontakt: <a href={`tel:${store.contact_phone}`} className="underline font-bold" style={{ color: brandColor }}>{store.contact_phone}</a></p>}
+              </section>
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">2. Formål og retsgrundlag</h3>
+                <p>Vi behandler dine oplysninger med det formål at sende dig tilbud og nyheder via SMS. Retsgrundlaget er dit samtykke, jf. GDPR art. 6(1)(a). Du kan til enhver tid tilbagekalde dit samtykke.</p>
+              </section>
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">3. Oplysninger vi behandler</h3>
+                <p>Vi gemmer dit navn, telefonnummer, tidspunktet for dit samtykke samt den tekst du accepterede. Vi gemmer ikke betalingsoplysninger eller andre følsomme data.</p>
+              </section>
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">4. Opbevaring</h3>
+                <p>Dine oplysninger opbevares, så længe du er tilmeldt Kundeklubben. Ved afmelding slettes eller anonymiseres dine data inden for 30 dage.</p>
+              </section>
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">5. Dine rettigheder</h3>
+                <p>Du har ret til indsigt, berigtigelse, sletning og dataportabilitet. Du har ret til at gøre indsigelse mod behandlingen og til at tilbagekalde dit samtykke. Kontakt os for at udøve disse rettigheder.</p>
+              </section>
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">6. Afmelding</h3>
+                <p>Du kan til enhver tid afmelde dig Kundeklubben ved at kontakte {store.name} direkte{store.contact_phone ? ` på ${store.contact_phone}` : ''}. Herefter modtager du ikke flere SMS-beskeder.</p>
+              </section>
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] italic text-slate-900">7. Klage</h3>
+                <p>Hvis du mener, at vi behandler dine oplysninger i strid med databeskyttelsesreglerne, kan du klage til <a href="https://www.datatilsynet.dk" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: brandColor }}>Datatilsynet</a> (datatilsynet.dk).</p>
+              </section>
+              <p className="text-xs text-slate-400 italic pt-4 border-t border-slate-100">Senest opdateret: {new Date().getFullYear()} • {store.name}</p>
             </div>
           </div>
         </div>
