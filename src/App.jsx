@@ -573,7 +573,7 @@ const App = () => {
                 </h3>
                 <p className="text-white/80 font-medium italic leading-relaxed">
                   Du er nu en del af {store.name}-familien.<br />
-                  Vi sender kun de bedste tilbud — lovet.
+                  Vi sørger for, at du kun hører fra os, når det er det hele værd.
                 </p>
               </div>
             ) : (
