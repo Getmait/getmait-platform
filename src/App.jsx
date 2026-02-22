@@ -61,6 +61,7 @@ const App = () => {
       let slug;
       if (hostname.includes('getmait.dk')) {
         slug = hostname.split('.getmait.dk')[0];
+        if (slug === 'staging.landingpage') slug = 'napoli';
       } else if (hostname.includes('sslip.io')) {
         slug = hostname.split('.')[0];
       } else if (hostname.includes('localhost') || isIpAddress) {
