@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, X, Send, Utensils, Sparkles, Phone, MessageCircle, AlertCircle } from 'lucide-react';
+import { MessageSquare, X, Send, Utensils, Sparkles, Phone, AlertCircle } from 'lucide-react';
 
 /**
  * GETMAIT AI CHAT WIDGET (Multi-tenant)
@@ -346,32 +346,18 @@ const ChatWidget = () => {
           </div>
 
           {/* KONTAKT BAR (DYNAMISK FRA SUPABASE) */}
-          <div className="bg-slate-50 px-6 py-5 flex justify-around border-b border-slate-100 shadow-inner">
+          <div className="bg-slate-50 px-6 py-4 flex border-b border-slate-100 shadow-inner gap-3">
             <a
               href={`tel:${store.phone_number || store.contact_phone}`}
-              className="flex flex-col items-center gap-1.5 group"
+              className="flex-1 flex items-center justify-center gap-2.5 bg-white rounded-2xl py-3 shadow-sm border border-slate-100 group hover:bg-green-50 hover:border-green-100 group-active:scale-95 transition-all"
               aria-label={`Ring til ${store.name}`}
             >
-              <div className="bg-white p-3 rounded-xl shadow-sm group-hover:bg-green-50 group-active:scale-90 transition-all">
-                <Phone size={18} className="text-slate-400 group-hover:text-green-600" />
-              </div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-600">Ring</span>
+              <Phone size={16} className="text-slate-400 group-hover:text-green-600 transition-colors" />
+              <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest group-hover:text-green-700 transition-colors">Ring</span>
             </a>
-            <a
-              href={`sms:${store.phone_number || store.contact_phone}`}
-              className="flex flex-col items-center gap-1.5 group"
-              aria-label={`Send SMS til ${store.name}`}
-            >
-              <div className="bg-white p-3 rounded-xl shadow-sm group-hover:bg-blue-50 group-active:scale-90 transition-all">
-                <MessageCircle size={18} className="text-slate-400 group-hover:text-blue-600" />
-              </div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-600">SMS</span>
-            </a>
-            <div className="flex flex-col items-center gap-1.5">
-              <div className="bg-red-50 p-3 rounded-xl shadow-sm border border-red-100 animate-pulse">
-                <Sparkles size={18} className="text-red-600" />
-              </div>
-              <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Chat-ordre</span>
+            <div className="flex-1 flex items-center justify-center gap-2.5 bg-red-50 rounded-2xl py-3 border border-red-100">
+              <Sparkles size={16} className="text-red-500 animate-pulse" />
+              <span className="text-[11px] font-black text-red-600 uppercase tracking-widest">Chat-ordre</span>
             </div>
           </div>
 
