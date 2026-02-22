@@ -467,7 +467,7 @@ const App = () => {
               Spørg din Mait <br /> hos {store.name}
             </h2>
             <p className="text-slate-500 text-xl font-medium italic leading-relaxed max-w-md pt-4">
-              Glem robot-stemmer og ventetid. Din Mait kender menukortet ud og ind og husker dine præferencer fra sidst.
+              Bestil hurtigt og nemt — ingen telefonkø, ingen ventetid på svar. Din Mait er klar med det samme, døgnet rundt.
             </p>
             <div className="flex items-center gap-4 pt-4">
               <div className="h-12 w-12 rounded-full bg-white shadow-md flex items-center justify-center" style={{ color: brandColor }}>
