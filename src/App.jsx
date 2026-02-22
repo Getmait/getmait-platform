@@ -307,20 +307,12 @@ const App = () => {
             <Pizza style={{ color: brandColor }} size={28} strokeWidth={3} />
             {store.name}
           </div>
-          <div className="hidden md:flex items-center gap-12">
-            <button onClick={() => scrollToId('menu')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-orange-600 transition-colors italic">Menukort</button>
-            <button onClick={() => scrollToId('kundeklub')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-orange-600 transition-colors italic">SMS-Klub</button>
-          </div>
-          <div className="flex items-center gap-4">
-            {(store.phone_number || store.contact_phone) && (
-              <div className="hidden sm:flex flex-col items-end">
-                <span className="text-[10px] font-black uppercase text-slate-400 italic leading-none mb-1 tracking-widest">Spørg din Mait</span>
-                <a href={`tel:${store.phone_number || store.contact_phone}`} className="text-sm font-extrabold text-slate-900 tracking-tight italic">
-                  {store.phone_number || store.contact_phone}
-                </a>
-              </div>
-            )}
-            <button className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl active:scale-95 transition-transform">Bestil nu</button>
+          <div className="flex items-center gap-8">
+            <div className="hidden md:flex items-center gap-12">
+              <button onClick={() => scrollToId('menu')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-orange-600 transition-colors italic">Menukort</button>
+              <button onClick={() => scrollToId('kundeklub')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-orange-600 transition-colors italic">SMS-Klub</button>
+            </div>
+            <button onClick={() => scrollToId('menu')} className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl active:scale-95 transition-transform">Bestil nu</button>
           </div>
         </div>
       </nav>
