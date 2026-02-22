@@ -650,7 +650,7 @@ const App = () => {
         <div className="fixed inset-0 z-[200] chat-overlay-in">
 
           {/* ── MOBIL: ChatWidget-stil (fuld skærm) ── */}
-          <div className="md:hidden flex flex-col h-full bg-white">
+          <div className="md:hidden flex flex-col h-dvh bg-white">
 
             {/* HEADER */}
             <div style={{ backgroundColor: brandColor }} className="p-6 text-white flex justify-between items-center relative overflow-hidden shrink-0">
@@ -732,7 +732,7 @@ const App = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Hvad skal vi sætte i ovnen, Mait?"
-                  className="flex-1 bg-slate-100 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 outline-none font-medium placeholder:text-slate-400 shadow-inner"
+                  className="flex-1 bg-slate-100 border-none rounded-2xl px-5 py-4 text-base focus:ring-2 outline-none font-medium placeholder:text-slate-400 shadow-inner"
                   disabled={isLoading}
                 />
                 <button
