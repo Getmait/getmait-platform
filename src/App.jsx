@@ -18,7 +18,6 @@ import {
   Loader2,
   ChefHat,
   Lock,
-  ThumbsUp,
   AlertCircle,
   ChevronDown
 } from 'lucide-react';
@@ -118,12 +117,43 @@ const App = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Welcome message når overlay åbnes
+  // Hent velkomstbesked fra n8n når overlay åbnes (samme flow som ChatWidget)
   useEffect(() => {
-    if (showChat && messages.length === 0) {
-      setMessages([{ role: 'assistant', content: `Ciao! Velkommen til ${store?.name}. Jeg er din Mait. Hvad skal vi forkæle dig med fra ovnen i dag? 🍕` }]);
-    }
-  }, [showChat, messages.length, store?.name]);
+    const fetchWelcomeMessage = async () => {
+      if (!showChat || !store || messages.length > 0 || isLoading) return;
+      let sessionId = sessionStorage.getItem(`getmait_overlay_${store.id}`);
+      if (!sessionId) {
+        sessionId = `overlay_${store.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        sessionStorage.setItem(`getmait_overlay_${store.id}`, sessionId);
+      }
+      setIsLoading(true);
+      try {
+        const response = await fetch(N8N_WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: '__INIT_CHAT__',
+            store_id: store.id,
+            store_name: store.name,
+            source: 'web_overlay_init',
+            sessionId,
+            timestamp: new Date().toISOString()
+          })
+        });
+        const data = await response.json();
+        const welcome = sanitizeReply(
+          data.reply || data.output || data.message,
+          `Hej! Velkommen til ${store.name}! 😊 Hvad kan jeg hjælpe dig med i dag?`
+        );
+        setMessages([{ role: 'assistant', content: welcome }]);
+      } catch (err) {
+        setMessages([{ role: 'assistant', content: `Hej! Velkommen til ${store.name}! 😊 Hvad kan jeg hjælpe dig med i dag?` }]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchWelcomeMessage();
+  }, [showChat, store, messages.length]);
 
   // Auto-scroll i chat overlay
   useEffect(() => {
@@ -194,6 +224,12 @@ const App = () => {
   // --- CHAT OVERLAY ---
   const N8N_WEBHOOK = import.meta.env.VITE_N8N_CHAT_WEBHOOK;
 
+  const sanitizeReply = (text, fallback) => {
+    if (!text || typeof text !== 'string') return fallback;
+    if (text.includes('={{') || text.includes('$json.') || text.includes('$node') || text.match(/^\{\{.*\}\}$/)) return fallback;
+    return text;
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -211,12 +247,15 @@ const App = () => {
           store_id: store?.id,
           store_name: store?.name,
           source: 'web_overlay',
-          sessionId: `overlay_${Date.now()}`,
+          sessionId: sessionStorage.getItem(`getmait_overlay_${store?.id}`) || `overlay_${store?.id}_${Date.now()}`,
           timestamp: new Date().toISOString()
         })
       });
       const data = await response.json();
-      const reply = data.reply || data.output || data.message || 'Tak! Vi vender tilbage hurtigst muligt.';
+      const reply = sanitizeReply(
+        data.reply || data.output || data.message,
+        'Tak! Vi vender tilbage hurtigst muligt.'
+      );
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (err) {
       setMessages(prev => [...prev, { role: 'assistant', content: `Hov, der opstod en fejl. Prøv igen eller ring til os.` }]);
@@ -634,18 +673,6 @@ const App = () => {
                         : 'bg-white text-slate-800 border-slate-100 rounded-tl-none'
                     }`}>
                       {msg.content}
-                      {msg.role === 'assistant' && i === messages.length - 1 && !isLoading && (
-                        <div className="mt-8 flex flex-wrap gap-3">
-                          {firstPizza && (
-                            <button onClick={() => setInput(`Jeg vil gerne bestille ${firstPizza.navn}`)} className="flex items-center gap-2 px-5 py-3 bg-[#FDFCFB] border-2 border-slate-200 rounded-3xl text-[10px] font-black text-slate-500 uppercase italic hover:border-orange-600 hover:text-orange-600 transition-all shadow-sm active:scale-95">
-                              <ThumbsUp size={14} /> Bestil {firstPizza.navn}
-                            </button>
-                          )}
-                          <button onClick={() => setInput('Hvad anbefaler du?')} className="flex items-center gap-2 px-5 py-3 bg-[#FDFCFB] border-2 border-slate-200 rounded-3xl text-[10px] font-black text-slate-500 uppercase italic hover:border-orange-600 hover:text-orange-600 transition-all shadow-sm active:scale-95">
-                            <Sparkles size={14} /> Hvad anbefaler du?
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}
