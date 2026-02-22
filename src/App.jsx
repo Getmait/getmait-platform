@@ -418,7 +418,7 @@ const App = () => {
           <div className="mb-8 md:mb-12">
             <h2 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase mb-2">Menukortet</h2>
             <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">
-              Håndplukket menu fra {store.name} i {store.city || 'Danmark'}.
+              Håndplukket menu fra {store.name}.
             </p>
           </div>
           <div className="flex flex-wrap gap-3 mb-12">
