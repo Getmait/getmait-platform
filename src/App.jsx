@@ -296,6 +296,28 @@ const App = () => {
   const openingHoursFormatted = formatOpeningHours(store?.opening_hours);
   const firstPizza = menu.find(item => item.kategori?.toLowerCase() === 'pizza');
 
+  // Tjek om butikken er åben baseret på åbningstider (dansk tid)
+  // is_open = false er altid lukket (manuel override ved travlhed)
+  // is_open = true → tjek mod opening_hours
+  const isOpen = (() => {
+    if (!store.is_open) return false;
+    if (!store.opening_hours) return true;
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Copenhagen',
+      weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false
+    }).formatToParts(now);
+    const day = parts.find(p => p.type === 'weekday')?.value?.toLowerCase();
+    const hour = parseInt(parts.find(p => p.type === 'hour')?.value);
+    const minute = parseInt(parts.find(p => p.type === 'minute')?.value);
+    const todayHours = store.opening_hours[day];
+    if (!todayHours) return false;
+    const current = hour * 60 + minute;
+    const [openH, openM] = todayHours.open.split(':').map(Number);
+    const [closeH, closeM] = todayHours.close.split(':').map(Number);
+    return current >= openH * 60 + openM && current < closeH * 60 + closeM;
+  })();
+
   return (
     <div className="min-h-screen bg-[#FDFDFD] font-sans text-slate-900 selection:bg-orange-100 text-left">
 
@@ -359,13 +381,13 @@ const App = () => {
             />
           </div>
           <div className="absolute -bottom-4 left-2 md:-left-8 bg-white/95 backdrop-blur-md p-4 md:p-6 rounded-[28px] md:rounded-[35px] flex items-center gap-3 md:gap-5 shadow-2xl border border-slate-50 z-10">
-            <div className={`h-5 w-5 md:h-6 md:w-6 rounded-full flex items-center justify-center text-white ${store.is_open ? 'bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}>
+            <div className={`h-5 w-5 md:h-6 md:w-6 rounded-full flex items-center justify-center text-white ${isOpen ? 'bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}>
               <Pizza size={10} />
             </div>
             <div>
-              <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 italic mb-0.5 leading-none">{store.is_open ? 'Ovnene er varme' : 'Vi holder lukket'}</p>
-              <p className={`font-black tracking-tight italic uppercase text-base md:text-lg leading-none ${store.is_open ? 'text-slate-800' : 'text-red-500'}`}>
-                {store.is_open ? `${store.waiting_time || 20} min ventetid` : 'Lukket'}
+              <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 italic mb-0.5 leading-none">{isOpen ? 'Ovnene er varme' : 'Vi holder lukket'}</p>
+              <p className={`font-black tracking-tight italic uppercase text-base md:text-lg leading-none ${isOpen ? 'text-slate-800' : 'text-red-500'}`}>
+                {isOpen ? `${store.waiting_time || 20} min ventetid` : 'Lukket'}
               </p>
             </div>
           </div>
@@ -672,8 +694,8 @@ const App = () => {
                   <h3 className="font-black text-2xl leading-none tracking-tighter uppercase italic">{store.name}</h3>
                   {store.city && <p className="text-xs opacity-75 mt-0.5">{store.city}</p>}
                   <div className="flex items-center gap-2 mt-1.5">
-                    <span className={`w-2.5 h-2.5 rounded-full ${store.is_open ? 'bg-green-400 animate-pulse shadow-[0_0_12px_rgba(74,222,128,1)]' : 'bg-red-500'}`}></span>
-                    <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-90">{store.is_open ? 'Din personlige Mait' : 'Vi holder lukket'}</p>
+                    <span className={`w-2.5 h-2.5 rounded-full ${isOpen ? 'bg-green-400 animate-pulse shadow-[0_0_12px_rgba(74,222,128,1)]' : 'bg-red-500'}`}></span>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-90">{isOpen ? 'Din personlige Mait' : 'Vi holder lukket'}</p>
                   </div>
                 </div>
               </div>
@@ -781,12 +803,12 @@ const App = () => {
                     </div>
                     <div className="pt-8 border-t border-white/10 space-y-6">
                       <div className="flex items-center gap-5">
-                        <div className={`h-3 w-3 rounded-full ${store.is_open ? 'bg-green-500 animate-pulse shadow-[0_0_15px_#22c55e]' : 'bg-red-500'}`}></div>
-                        <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 italic">{store.is_open ? 'Køkkenet er Online' : 'Vi holder lukket'}</span>
+                        <div className={`h-3 w-3 rounded-full ${isOpen ? 'bg-green-500 animate-pulse shadow-[0_0_15px_#22c55e]' : 'bg-red-500'}`}></div>
+                        <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 italic">{isOpen ? 'Køkkenet er Online' : 'Vi holder lukket'}</span>
                       </div>
                       <div className="flex items-center gap-5">
                         <Clock size={20} style={{ color: brandColor }} />
-                        <span className="text-sm font-bold italic text-slate-300 uppercase tracking-widest">{store.is_open ? `${store.waiting_time || 20} min. ventetid` : 'Lukket'}</span>
+                        <span className="text-sm font-bold italic text-slate-300 uppercase tracking-widest">{isOpen ? `${store.waiting_time || 20} min. ventetid` : 'Lukket'}</span>
                       </div>
                     </div>
                   </div>
