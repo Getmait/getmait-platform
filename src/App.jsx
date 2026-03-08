@@ -69,14 +69,21 @@ const App = () => {
       const hostname = window.location.hostname;
       const isIpAddress = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
 
+      const defaultSlug = import.meta.env.VITE_DEFAULT_SLUG || 'napoli-esbjerg';
+
       let slug;
       if (hostname.includes('getmait.dk')) {
-        slug = hostname.split('.getmait.dk')[0];
-        if (slug === 'staging.landingpage') slug = 'napoli';
+        const subdomain = hostname.split('.getmait.dk')[0];
+        // System/infra subdomains (e.g. platform-staging, platform-dev) use default slug
+        if (subdomain.startsWith('platform-')) {
+          slug = defaultSlug;
+        } else {
+          slug = subdomain;
+        }
       } else if (hostname.includes('sslip.io')) {
         slug = hostname.split('.')[0];
       } else if (hostname.includes('localhost') || isIpAddress) {
-        slug = 'napoli';
+        slug = defaultSlug;
       } else {
         slug = hostname.split('.')[0];
       }
