@@ -272,6 +272,14 @@ const App = () => {
       setIsSubmitting(false);
       return;
     }
+
+    // Send velkomst-SMS via n8n
+    fetch('https://n8n.getmait.dk/webhook/kundeklub-velkomst', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: normalizedPhone, name: name.trim(), store_id: store?.id }),
+    }).catch(() => {}); // fire-and-forget
+
     setIsSubmitting(false);
     setIsSubscribed(true);
   };
