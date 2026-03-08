@@ -48,6 +48,8 @@ const App = () => {
   const [gdprAccepted, setGdprAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [klubStep, setKlubStep] = useState(1); // 1 = navn+tlf, 2 = adresse
+  const [checkingPhone, setCheckingPhone] = useState(false);
 
   // Roterende anbefaling (desktop sidebar)
   const [featuredCatIndex, setFeaturedCatIndex] = useState(0);
@@ -251,38 +253,55 @@ const App = () => {
     return '+45' + cleaned;
   };
 
-  const handleSubscribe = async (e) => {
-    e.preventDefault();
-    if (!gdprAccepted) return;
+  const doSubscribe = async (normalizedPhone, addr) => {
     setIsSubmitting(true);
     setSubscribeError('');
-
-    const consentText = `Jeg giver samtykke til, at ${store.name} må sende mig SMS-marketing. Jeg kan til enhver tid afmelde mig.`;
-
-    const normalizedPhone = normalizePhone(phone);
     const { error } = await supabase
       .from('customers')
       .upsert({
         tenant_id: tenantId,
         name: name.trim(),
         phone: normalizedPhone,
-        address: address.trim() || null,
+        address: addr || null,
         opted_in_sms: true,
       }, { onConflict: 'tenant_id,phone' });
 
     if (error) {
-      if (error.code === '23505') {
-        setSubscribeError('Du er allerede tilmeldt Kundeklubben fra dette nummer 🎉');
-      } else {
-        console.error('Kundeklub signup error:', error);
-        setSubscribeError('Noget gik galt. Prøv igen eller kontakt os direkte.');
-      }
+      console.error('Kundeklub signup error:', error);
+      setSubscribeError('Noget gik galt. Prøv igen eller kontakt os direkte.');
       setIsSubmitting(false);
       return;
     }
-
     setIsSubmitting(false);
     setIsSubscribed(true);
+  };
+
+  const handleStep1 = async (e) => {
+    e.preventDefault();
+    if (!gdprAccepted) return;
+    setCheckingPhone(true);
+    setSubscribeError('');
+
+    const normalizedPhone = normalizePhone(phone);
+    const { data: existing } = await supabase
+      .from('customers')
+      .select('address')
+      .eq('tenant_id', tenantId)
+      .eq('phone', normalizedPhone)
+      .maybeSingle();
+
+    setCheckingPhone(false);
+
+    if (existing?.address) {
+      await doSubscribe(normalizedPhone, existing.address);
+    } else {
+      setKlubStep(2);
+    }
+  };
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    await doSubscribe(normalizePhone(phone), address.trim());
   };
 
   // --- CHAT OVERLAY ---
@@ -594,8 +613,8 @@ const App = () => {
                   Vi sørger for, at du kun hører fra os, når det er det hele værd.
                 </p>
               </div>
-            ) : (
-              <form onSubmit={handleSubscribe} className="bg-[#FAFAFA] p-7 md:p-14 rounded-[60px] border border-slate-100 shadow-xl space-y-6 relative overflow-hidden">
+            ) : klubStep === 1 ? (
+              <form onSubmit={handleStep1} className="bg-[#FAFAFA] p-7 md:p-14 rounded-[60px] border border-slate-100 shadow-xl space-y-6 relative overflow-hidden">
 
                 {/* NAVN */}
                 <div className="space-y-2">
@@ -633,23 +652,6 @@ const App = () => {
                   </div>
                 </div>
 
-                {/* ADRESSE */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 italic block">Leveringsadresse (valgfri)</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="F.eks. Strandvej 12, 2900 Hellerup"
-                      className="w-full bg-white border-2 border-slate-100 rounded-[24px] py-5 px-8 pl-14 text-lg font-bold outline-none transition-all placeholder:text-slate-200 shadow-inner italic"
-                      onFocus={e => e.target.style.borderColor = brandColor}
-                      onBlur={e => e.target.style.borderColor = ''}
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                    />
-                    <MapPin size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
-                  </div>
-                </div>
-
                 {/* GDPR */}
                 <label className="flex items-start gap-4 cursor-pointer group">
                   <div className="relative mt-1 shrink-0">
@@ -665,12 +667,78 @@ const App = () => {
 
                 {/* KNAP */}
                 <button
-                  disabled={!gdprAccepted || isSubmitting}
+                  disabled={!gdprAccepted || checkingPhone}
+                  type="submit"
+                  className="w-full text-white py-6 rounded-[24px] font-black uppercase italic tracking-widest text-lg shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-30 disabled:grayscale"
+                  style={{ backgroundColor: brandColor }}
+                >
+                  {checkingPhone ? <Zap className="animate-spin" size={24} /> : <>Næste <ArrowRight size={24} /></>}
+                </button>
+
+                {subscribeError && (
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                    <AlertCircle size={16} className="shrink-0 text-orange-500" />
+                    <span>{subscribeError}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center gap-3 opacity-30 pt-2">
+                  <ShieldCheck size={14} />
+                  <span className="text-[10px] font-black uppercase tracking-widest italic">100% GDPR Sikret</span>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleSubscribe} className="bg-[#FAFAFA] p-7 md:p-14 rounded-[60px] border border-slate-100 shadow-xl space-y-6 relative overflow-hidden">
+
+                {/* TRIN INDIKATOR */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-2 rounded-full bg-slate-200"></div>
+                  <div className="w-8 h-2 rounded-full" style={{ backgroundColor: brandColor }}></div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic ml-2">Trin 2 / 2</span>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-2xl font-black italic uppercase text-slate-900 leading-tight">Hvad er din adresse?</h3>
+                  <p className="text-sm font-medium italic text-slate-400 leading-relaxed">
+                    Vi bruger den, når du svarer ja til levering på vores tilbud.
+                  </p>
+                </div>
+
+                {/* ADRESSE */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 italic block">Leveringsadresse</label>
+                  <div className="relative">
+                    <input
+                      required
+                      autoFocus
+                      type="text"
+                      placeholder="F.eks. Strandvej 12, 2900 Hellerup"
+                      className="w-full bg-white border-2 border-slate-100 rounded-[24px] py-5 px-8 pl-14 text-lg font-bold outline-none transition-all placeholder:text-slate-200 shadow-inner italic"
+                      onFocus={e => e.target.style.borderColor = brandColor}
+                      onBlur={e => e.target.style.borderColor = ''}
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                    />
+                    <MapPin size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
+                  </div>
+                </div>
+
+                {/* KNAPPER */}
+                <button
+                  disabled={isSubmitting}
                   type="submit"
                   className="w-full text-white py-6 rounded-[24px] font-black uppercase italic tracking-widest text-lg shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-30 disabled:grayscale"
                   style={{ backgroundColor: brandColor }}
                 >
                   {isSubmitting ? <Zap className="animate-spin" size={24} /> : <>Tilmeld mig nu <ArrowRight size={24} /></>}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setKlubStep(1)}
+                  className="w-full text-slate-400 text-sm font-bold italic text-center hover:text-slate-600 transition-colors"
+                >
+                  ← Tilbage
                 </button>
 
                 {subscribeError && (
