@@ -32,6 +32,7 @@ const App = () => {
   // --- SUPABASE DATA ---
   const [loading, setLoading] = useState(true);
   const [store, setStore] = useState(null);
+  const [tenantId, setTenantId] = useState(null);
   const [menu, setMenu] = useState([]);
   const [error, setError] = useState(null);
 
@@ -43,6 +44,7 @@ const App = () => {
   // SMS Kundeklub state
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [gdprAccepted, setGdprAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -78,7 +80,8 @@ const App = () => {
         if (subdomain.startsWith('platform-')) {
           slug = defaultSlug;
         } else {
-          slug = subdomain;
+          // Strip miljø-suffiks: devpizza-dev → devpizza, devpizza-staging → devpizza
+          slug = subdomain.replace(/-(dev|staging)$/, '');
         }
       } else if (hostname.includes('sslip.io')) {
         slug = hostname.split('.')[0];
@@ -108,6 +111,14 @@ const App = () => {
         }
 
         setStore(storeData);
+
+        // Hent tenant_id til kundeklub-tilmelding
+        const { data: tenantData } = await supabase
+          .from('tenants')
+          .select('id')
+          .eq('store_id', storeData.id)
+          .single();
+        if (tenantData) setTenantId(tenantData.id);
 
         const { data: menuData, error: menuError } = await supabase
           .from('menu')
@@ -248,16 +259,16 @@ const App = () => {
 
     const consentText = `Jeg giver samtykke til, at ${store.name} må sende mig SMS-marketing. Jeg kan til enhver tid afmelde mig.`;
 
+    const normalizedPhone = normalizePhone(phone);
     const { error } = await supabase
-      .from('kundeklub_members')
-      .insert({
-        store_id: store.id,
+      .from('customers')
+      .upsert({
+        tenant_id: tenantId,
         name: name.trim(),
-        phone: normalizePhone(phone),
-        consent_given: true,
-        consent_text: consentText,
-        source: 'landing_page'
-      });
+        phone: normalizedPhone,
+        address: address.trim() || null,
+        opted_in_sms: true,
+      }, { onConflict: 'tenant_id,phone' });
 
     if (error) {
       if (error.code === '23505') {
@@ -619,6 +630,23 @@ const App = () => {
                       onChange={(e) => setPhone(e.target.value)}
                     />
                     <Phone size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
+                  </div>
+                </div>
+
+                {/* ADRESSE */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 italic block">Leveringsadresse (valgfri)</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="F.eks. Strandvej 12, 2900 Hellerup"
+                      className="w-full bg-white border-2 border-slate-100 rounded-[24px] py-5 px-8 pl-14 text-lg font-bold outline-none transition-all placeholder:text-slate-200 shadow-inner italic"
+                      onFocus={e => e.target.style.borderColor = brandColor}
+                      onBlur={e => e.target.style.borderColor = ''}
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                    />
+                    <MapPin size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
                   </div>
                 </div>
 
