@@ -62,7 +62,12 @@ const ChatWidget = () => {
         let slug = 'napoli-esbjerg'; // Default for development
 
         if (hostname.includes('getmait.dk')) {
-          slug = hostname.split('.getmait.dk')[0];
+          const subdomain = hostname.split('.getmait.dk')[0];
+          if (subdomain.startsWith('platform-')) {
+            slug = 'napoli-esbjerg';
+          } else {
+            slug = subdomain.replace(/-(dev|staging)$/, '');
+          }
         } else if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
           // For local development: Check URL params
           const urlParams = new URLSearchParams(window.location.search);
