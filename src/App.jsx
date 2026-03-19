@@ -127,14 +127,20 @@ const App = () => {
           .select('*')
           .eq('store_id', storeData.id)
           .eq('tilgaengelig', true)
-          .order('kategori', { ascending: true })
-          .order('pris', { ascending: true });
+          .order('kategori', { ascending: true });
 
         if (menuError) {
           console.error('Menu error:', menuError);
         }
 
-        setMenu(menuData || []);
+        const sortedMenu = (menuData || []).sort((a, b) => {
+          if (a.kategori !== b.kategori) return 0;
+          const nrA = parseInt(a.nr) || Infinity;
+          const nrB = parseInt(b.nr) || Infinity;
+          return nrA - nrB;
+        });
+
+        setMenu(sortedMenu);
         setLoading(false);
       } catch (err) {
         console.error('Error loading data:', err);
