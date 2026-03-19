@@ -245,7 +245,7 @@ const ChatWidget = () => {
       console.error('[GetMait Widget] Error sending message:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "Hov, Mait! Jeg mistede forbindelsen til ovnen. Prøv venligst igen eller giv os et kald på " + (store.phone_number || store.contact_phone)
+        content: "Hov, Mait! Jeg mistede forbindelsen til ovnen. Prøv venligst igen eller giv os et kald på " + (store.contact_phone || store.phone_number)
       }]);
     } finally {
       setIsLoading(false);
@@ -353,7 +353,7 @@ const ChatWidget = () => {
           {/* KONTAKT BAR (DYNAMISK FRA SUPABASE) */}
           <div className="bg-slate-50 px-6 py-4 flex border-b border-slate-100 shadow-inner gap-3">
             <a
-              href={`tel:${store.phone_number || store.contact_phone}`}
+              href={`tel:${store.contact_phone || store.phone_number}`}
               className="flex-1 flex items-center justify-center gap-2.5 bg-white rounded-2xl py-3 shadow-sm border border-slate-100 group hover:bg-green-50 hover:border-green-100 group-active:scale-95 transition-all"
               aria-label={`Ring til ${store.name}`}
             >
