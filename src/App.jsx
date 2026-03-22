@@ -23,10 +23,218 @@ import {
  User,
  Utensils,
  UserCheck,
- Building2
+ Building2,
+ ShoppingCart,
+ Plus,
+ Minus,
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import ChatWidget from './ChatWidget';
+
+// ─── Item Customization Modal ────────────────────────────────────────────────
+const ItemModal = ({ item, tilbehoerItems, brandColor, onAdd, onClose }) => {
+  const sizes = item.variants?.sizes || [];
+  const bases = item.variants?.bases || [];
+  const prices = item.variants?.prices || {};
+  const isTilbehoer = /tilbehør/i.test(item.kategori || '');
+
+  const [selectedSize, setSelectedSize] = useState(sizes.length > 0 ? 'Alm.' : null);
+  const [selectedBase, setSelectedBase] = useState(null);
+  const [removedIngredients, setRemovedIngredients] = useState([]);
+  const [extras, setExtras] = useState([]);
+  const [qty, setQty] = useState(1);
+
+  const ingredients = React.useMemo(() => {
+    if (!item.beskrivelse || isTilbehoer) return [];
+    const raw = item.beskrivelse.split(/valg:/i)[0]
+      .replace(/^m\/\s*/i, '').replace(/^med\s+/i, '');
+    return raw.split(/[,.]/).map(s => s.trim()).filter(s => s.length > 1);
+  }, [item.beskrivelse, isTilbehoer]);
+
+  const unitPrice = React.useMemo(() => {
+    if (!selectedSize || selectedSize === 'Alm.') return parseFloat(item.pris) || 0;
+    return parseFloat(prices[selectedSize]) || parseFloat(item.pris) || 0;
+  }, [selectedSize, item.pris, prices]);
+
+  const extrasTotal = extras.reduce((sum, e) => sum + e.pris, 0);
+  const lineTotal = (unitPrice + extrasTotal) * qty;
+
+  const toggleIngredient = (ing) => {
+    setRemovedIngredients(prev =>
+      prev.includes(ing) ? prev.filter(x => x !== ing) : [...prev, ing]
+    );
+  };
+
+  const toggleExtra = (tb) => {
+    setExtras(prev => {
+      if (prev.find(e => e.id === tb.id)) return prev.filter(e => e.id !== tb.id);
+      const pris = (selectedSize === 'Fam. 60x60' && tb.variants?.['Fam. 60x60'] !== undefined)
+        ? parseFloat(tb.variants['Fam. 60x60'])
+        : parseFloat(tb.pris) || 0;
+      return [...prev, { id: tb.id, navn: tb.navn, pris }];
+    });
+  };
+
+  const handleAdd = () => {
+    onAdd({
+      id: `${item.id}-${Date.now()}`,
+      menu_id: item.id,
+      nr: item.nr,
+      navn: item.navn,
+      qty,
+      size: selectedSize,
+      base: selectedBase,
+      removedIngredients,
+      extras,
+      unitPrice,
+      lineTotal: Math.round(lineTotal),
+    });
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white w-full max-w-lg rounded-[40px] overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 flex justify-between items-start shrink-0">
+          <div>
+            {item.nr && <p className="text-xs font-black uppercase tracking-widest mb-0.5" style={{ color: brandColor }}>Nr. {item.nr}</p>}
+            <h3 className="text-xl font-black uppercase tracking-tight">{item.navn}</h3>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0 ml-4">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-6 pb-2 space-y-6">
+
+          {/* Størrelse */}
+          {sizes.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Størrelse</p>
+              <div className="flex flex-wrap gap-2">
+                {sizes.map(size => {
+                  const sizePrice = size === 'Alm.' ? parseFloat(item.pris) : (parseFloat(prices[size]) || parseFloat(item.pris));
+                  return (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`px-4 py-2 rounded-full text-sm font-black border-2 transition-all ${selectedSize === size ? 'text-white' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                      style={selectedSize === size ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
+                    >
+                      {size} — {sizePrice} kr
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Bund */}
+          {bases.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Bund (tilvalg)</p>
+              <div className="flex flex-wrap gap-2">
+                {bases.map(base => (
+                  <button
+                    key={base}
+                    onClick={() => setSelectedBase(prev => prev === base ? null : base)}
+                    className={`px-4 py-2 rounded-full text-sm font-black border-2 transition-all ${selectedBase === base ? 'text-white' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                    style={selectedBase === base ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
+                  >
+                    {base}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Ingredienser */}
+          {ingredients.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Ingredienser — tryk for at fjerne</p>
+              <div className="flex flex-wrap gap-2">
+                {ingredients.map(ing => {
+                  const removed = removedIngredients.includes(ing);
+                  return (
+                    <button
+                      key={ing}
+                      onClick={() => toggleIngredient(ing)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${removed ? 'bg-slate-100 border-slate-200 text-slate-400 line-through' : 'bg-white border-slate-200 text-slate-700 hover:border-red-300'}`}
+                    >
+                      {ing}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Ekstra tilbehør */}
+          {tilbehoerItems.length > 0 && !isTilbehoer && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Ekstra tilbehør</p>
+              <div className="grid grid-cols-2 gap-2">
+                {tilbehoerItems.map(tb => {
+                  const tbPris = (selectedSize === 'Fam. 60x60' && tb.variants?.['Fam. 60x60'] !== undefined)
+                    ? parseFloat(tb.variants['Fam. 60x60'])
+                    : parseFloat(tb.pris) || 0;
+                  const isSelected = extras.some(e => e.id === tb.id);
+                  return (
+                    <button
+                      key={tb.id}
+                      onClick={() => toggleExtra(tb)}
+                      className={`flex items-center justify-between px-3 py-2 rounded-2xl text-xs font-bold border transition-all text-left ${isSelected ? 'text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300 bg-white'}`}
+                      style={isSelected ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
+                    >
+                      <span className="truncate mr-1">{tb.navn}</span>
+                      <span className={`shrink-0 ${isSelected ? 'opacity-75' : 'text-slate-400'}`}>{tbPris > 0 ? `${tbPris} kr` : 'Gratis'}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer: antal + tilføj */}
+        <div className="px-6 py-5 border-t border-slate-100 shrink-0 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setQty(q => Math.max(1, q - 1))}
+              className="h-10 w-10 rounded-full border-2 border-slate-200 flex items-center justify-center hover:border-slate-400 transition-colors"
+            >
+              <Minus size={16} />
+            </button>
+            <span className="text-xl font-black w-6 text-center">{qty}</span>
+            <button
+              onClick={() => setQty(q => q + 1)}
+              className="h-10 w-10 rounded-full border-2 flex items-center justify-center transition-colors"
+              style={{ borderColor: brandColor, color: brandColor }}
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+          <button
+            onClick={handleAdd}
+            className="flex items-center gap-2 px-6 py-3 rounded-full text-white font-black text-sm shadow-lg transition-transform active:scale-95"
+            style={{ backgroundColor: brandColor }}
+          >
+            <ShoppingCart size={16} />
+            Tilføj — {Math.round(lineTotal)} kr
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const App = () => {
  // --- SUPABASE DATA ---
@@ -66,6 +274,11 @@ const App = () => {
  const [isLoading, setIsLoading] = useState(false);
  const [messages, setMessages] = useState([]);
  const scrollRef = useRef(null);
+
+ // Cart & modal state
+ const [cart, setCart] = useState([]);
+ const [modalItem, setModalItem] = useState(null);
+ const pendingCartRef = useRef(null);
 
  // --- DATA FETCHING ---
  useEffect(() => {
@@ -187,6 +400,12 @@ const App = () => {
  `Hej! Velkommen til ${store.name}! 😊 Hvad kan jeg hjælpe dig med i dag?`
  );
  setMessages([{ role: 'assistant', content: welcome }]);
+ // Auto-send pending cart message (from cart bar "Bestil" button)
+ if (pendingCartRef.current) {
+   const cartMsg = pendingCartRef.current;
+   pendingCartRef.current = null;
+   setTimeout(() => sendToChatN8n(cartMsg), 300);
+ }
  } catch (err) {
  setMessages([{ role: 'assistant', content: `Hej! Velkommen til ${store.name}! 😊 Hvad kan jeg hjælpe dig med i dag?` }]);
  } finally {
@@ -224,6 +443,11 @@ const App = () => {
  }, [activeCategory, menu]);
 
  const displayedItems = isMenuExpanded ? currentItems : currentItems.slice(0, 6);
+
+ const tilbehoerItems = useMemo(() =>
+   menu.filter(item => /tilbehør/i.test(item.kategori || '')), [menu]);
+ const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
+ const cartTotal = Math.round(cart.reduce((sum, i) => sum + i.lineTotal, 0));
 
  // --- ÅBNINGSTIDER HJÆLPER ---
  const formatOpeningHours = (hours) => {
@@ -359,6 +583,59 @@ const App = () => {
  } finally {
  setIsLoading(false);
  }
+ };
+
+ // Send message to n8n (shared by user input and cart auto-send)
+ const sendToChatN8n = async (msg) => {
+   setMessages(prev => [...prev, { role: 'user', content: msg }]);
+   setIsLoading(true);
+   try {
+     let sessionId = sessionStorage.getItem(`getmait_overlay_${store?.id}`);
+     if (!sessionId) {
+       sessionId = `overlay_${store?.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+       sessionStorage.setItem(`getmait_overlay_${store?.id}`, sessionId);
+     }
+     const response = await fetch(N8N_WEBHOOK, {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({
+         message: msg,
+         store_id: store?.id,
+         store_name: store?.name,
+         source: 'web_overlay',
+         sessionId,
+         timestamp: new Date().toISOString()
+       })
+     });
+     const data = await response.json();
+     const reply = sanitizeReply(data.reply || data.output || data.message, 'Tak! Vi vender tilbage hurtigst muligt.');
+     setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+   } catch {
+     setMessages(prev => [...prev, { role: 'assistant', content: 'Hov, der opstod en fejl. Prøv igen eller ring til os.' }]);
+   } finally {
+     setIsLoading(false);
+   }
+ };
+
+ const buildCartMessage = (cartItems) => {
+   const lines = cartItems.map(i => {
+     const nrStr = i.nr ? `nr. ${i.nr} ` : '';
+     const sizeStr = i.size && i.size !== 'Alm.' ? ` (${i.size})` : '';
+     const baseStr = i.base ? `, ${i.base}` : '';
+     const removedStr = i.removedIngredients.length > 0 ? `, uden ${i.removedIngredients.join(', ')}` : '';
+     const extrasStr = i.extras.length > 0 ? `, med ${i.extras.map(e => e.navn).join(', ')}` : '';
+     const qtyStr = i.qty > 1 ? `${i.qty}x ` : '';
+     return `- ${qtyStr}${nrStr}${i.navn}${sizeStr}${baseStr}${removedStr}${extrasStr} — ${i.lineTotal} kr`;
+   });
+   const total = Math.round(cartItems.reduce((s, i) => s + i.lineTotal, 0));
+   return `Jeg vil gerne bestille:\n${lines.join('\n')}\nTotal: ${total} kr`;
+ };
+
+ const handleBestil = () => {
+   if (cart.length === 0) return;
+   pendingCartRef.current = buildCartMessage(cart);
+   setMessages([]);
+   setShowChat(true);
  };
 
  const scrollToId = (id) => {
@@ -518,23 +795,27 @@ const App = () => {
  <div className="grid md:grid-cols-2 gap-8">
  {displayedItems.map((item, index) => (
  <div
- key={item.id}
- className="p-5 md:p-10 rounded-[32px] md:rounded-[48px] border border-slate-100 flex justify-between items-center bg-[#FAFAFA]/50 hover:bg-white hover:shadow-2xl hover:border-orange-200 transition-all group cursor-pointer"
+   key={item.id}
+   onClick={() => setModalItem(item)}
+   className="p-5 md:p-10 rounded-[32px] md:rounded-[48px] border border-slate-100 flex justify-between items-center bg-[#FAFAFA]/50 hover:bg-white hover:shadow-2xl hover:border-orange-200 transition-all group cursor-pointer"
  >
- <div className="space-y-1 max-w-[68%]">
- <div className="flex items-baseline gap-1.5 md:gap-2 mb-1">
- {item.nr != null && item.nr !== '' && (
- <span className="text-[15px] md:text-[20px] font-black shrink-0" style={{ color: brandColor }}>
-  {item.nr}.
- </span>
-)}
- <h3 className="font-black text-[17px] md:text-[22px] text-slate-800 uppercase leading-tight md:leading-none">{item.navn}</h3>
- </div>
- <p className="text-slate-400 text-xs md:text-sm font-medium">{item.beskrivelse}</p>
- </div>
- <div className="text-right shrink-0">
- <span className="text-[20px] md:text-[28px] font-black whitespace-nowrap" style={{ color: brandColor }}>{item.pris} kr.</span>
- </div>
+   <div className="space-y-1 max-w-[68%]">
+     <div className="flex items-baseline gap-1.5 md:gap-2 mb-1">
+       {item.nr != null && item.nr !== '' && (
+         <span className="text-[15px] md:text-[20px] font-black shrink-0" style={{ color: brandColor }}>
+           {item.nr}.
+         </span>
+       )}
+       <h3 className="font-black text-[17px] md:text-[22px] text-slate-800 uppercase leading-tight md:leading-none">{item.navn}</h3>
+     </div>
+     <p className="text-slate-400 text-xs md:text-sm font-medium">{item.beskrivelse}</p>
+   </div>
+   <div className="text-right shrink-0 flex flex-col items-end gap-2">
+     <span className="text-[20px] md:text-[28px] font-black whitespace-nowrap" style={{ color: brandColor }}>{item.pris} kr.</span>
+     <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+       <Plus size={10} /> Tilføj
+     </span>
+   </div>
  </div>
  ))}
  </div>
@@ -848,6 +1129,38 @@ const App = () => {
 
  {/* CHAT WIDGET - UÆNDRET */}
  <ChatWidget />
+
+ {/* STICKY KURV-BAR */}
+ {cart.length > 0 && (
+   <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+     <div className="pointer-events-auto bg-slate-900 text-white rounded-full pl-5 pr-2 py-2 flex items-center gap-4 shadow-2xl border border-slate-800">
+       <div className="flex items-center gap-2.5">
+         <ShoppingCart size={16} className="opacity-75" />
+         <span className="font-black text-sm">{cartCount} vare{cartCount !== 1 ? 'r' : ''}</span>
+         <span className="text-slate-500">·</span>
+         <span className="font-black text-sm">{cartTotal} kr</span>
+       </div>
+       <button
+         onClick={handleBestil}
+         className="text-white font-black text-sm px-5 py-2 rounded-full transition-transform active:scale-95 shadow-lg"
+         style={{ backgroundColor: brandColor }}
+       >
+         Bestil nu
+       </button>
+     </div>
+   </div>
+ )}
+
+ {/* ITEM CUSTOMIZATION MODAL */}
+ {modalItem && (
+   <ItemModal
+     item={modalItem}
+     tilbehoerItems={tilbehoerItems}
+     brandColor={brandColor}
+     onAdd={(cartItem) => setCart(prev => [...prev, cartItem])}
+     onClose={() => setModalItem(null)}
+   />
+ )}
 
  {/* CHAT OVERLAY — åbnes via "Chat din bestilling" */}
  {showChat && (
