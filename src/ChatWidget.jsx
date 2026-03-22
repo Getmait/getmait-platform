@@ -17,7 +17,7 @@ import { MessageSquare, X, Send, Utensils, Sparkles, Phone, AlertCircle } from '
  * - Supabase URL: https://supabase.getmait.dk
  */
 
-const ChatWidget = () => {
+const ChatWidget = ({ forceOpen = false, onOpen, pendingOrder = null, onOrderSent }) => {
   // --- KONFIGURATION (Hardcoded for production stability) ---
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://supabase.getmait.dk";
   const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc3MDI4NjgwMCwiZXhwIjo0OTI1OTYwNDAwLCJyb2xlIjoiYW5vbiJ9.Lshy9-QNUcZhFol6_zI6yinhWak7nmkd03rMs94-viE";
@@ -116,6 +116,14 @@ const ChatWidget = () => {
     fetchStoreData();
   }, [SUPABASE_URL, SUPABASE_ANON_KEY]);
 
+  // Åbn widget når forceOpen bliver true (fra f.eks. "Chat din bestilling"-knap)
+  useEffect(() => {
+    if (forceOpen) {
+      setIsOpen(true);
+      if (onOpen) onOpen();
+    }
+  }, [forceOpen]);
+
   /**
    * Hent welcome message fra n8n når chat åbnes første gang
    */
@@ -159,13 +167,15 @@ const ChatWidget = () => {
           data.reply || data.output || data.message,
           `Hej! Velkommen til ${store.name}! 😊 Hvad kan jeg hjælpe dig med i dag?`
         );
-        setMessages([{
-          role: 'assistant',
-          content: welcomeMessage
-        }]);
+        setMessages([{ role: 'assistant', content: welcomeMessage }]);
+
+        // Auto-send pending cart order
+        if (pendingOrder) {
+          if (onOrderSent) onOrderSent();
+          setTimeout(() => sendOrder(pendingOrder), 300);
+        }
       } catch (error) {
         console.error('[GetMait Widget] Error fetching welcome message:', error);
-        // Fallback welcome message hvis n8n ikke svarer
         setMessages([{
           role: 'assistant',
           content: `Hej! Velkommen til ${store.name}! 😊 Hvad kan jeg hjælpe dig med i dag?`
@@ -186,6 +196,31 @@ const ChatWidget = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
+
+  // Intern hjælper til at sende en besked (bruges af auto-send cart)
+  const sendOrder = async (msg) => {
+    setMessages(prev => [...prev, { role: 'user', content: msg }]);
+    setIsLoading(true);
+    try {
+      let sessionId = sessionStorage.getItem(`getmait_session_${store.id}`);
+      if (!sessionId) {
+        sessionId = `${store.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        sessionStorage.setItem(`getmait_session_${store.id}`, sessionId);
+      }
+      const response = await fetch(N8N_CHAT_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, store_id: store.id, store_name: store.name, source: 'web_chat', sessionId, timestamp: new Date().toISOString() }),
+      });
+      const data = await response.json();
+      const reply = sanitizeReply(data.reply || data.output || data.message, 'Tak! Vi behandler din bestilling.');
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Hov, der opstod en fejl. Prøv igen.' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   /**
    * Send besked til n8n webhook

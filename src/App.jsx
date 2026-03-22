@@ -267,13 +267,10 @@ const App = () => {
  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
  const [subscribeError, setSubscribeError] = useState('');
 
- // Chat overlay state
- const [showChat, setShowChat] = useState(false);
+ // Chat widget state
+ const [chatOpen, setChatOpen] = useState(false);
  const [showTerms, setShowTerms] = useState(false);
- const [input, setInput] = useState('');
- const [isLoading, setIsLoading] = useState(false);
- const [messages, setMessages] = useState([]);
- const scrollRef = useRef(null);
+ const [pendingOrder, setPendingOrder] = useState(null);
 
  // Cart & modal state
  const [cart, setCart] = useState([]);
@@ -370,55 +367,6 @@ const App = () => {
  window.addEventListener('scroll', handleScroll);
  return () => window.removeEventListener('scroll', handleScroll);
  }, []);
-
- // Hent velkomstbesked fra n8n når overlay åbnes (samme flow som ChatWidget)
- useEffect(() => {
- const fetchWelcomeMessage = async () => {
- if (!showChat || !store || messages.length > 0 || isLoading) return;
- let sessionId = sessionStorage.getItem(`getmait_overlay_${store.id}`);
- if (!sessionId) {
- sessionId = `overlay_${store.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
- sessionStorage.setItem(`getmait_overlay_${store.id}`, sessionId);
- }
- setIsLoading(true);
- try {
- const response = await fetch(N8N_WEBHOOK, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- message: '__INIT_CHAT__',
- store_id: store.id,
- store_name: store.name,
- source: 'web_overlay_init',
- sessionId,
- timestamp: new Date().toISOString()
- })
- });
- const data = await response.json();
- const welcome = sanitizeReply(
- data.reply || data.output || data.message,
- `Hej! Velkommen til ${store.name}! 😊 Hvad kan jeg hjælpe dig med i dag?`
- );
- setMessages([{ role: 'assistant', content: welcome }]);
- // Auto-send pending cart message (from cart bar "Bestil" button)
- if (pendingCartRef.current) {
-   const cartMsg = pendingCartRef.current;
-   pendingCartRef.current = null;
-   setTimeout(() => sendToChatN8n(cartMsg), 300);
- }
- } catch (err) {
- setMessages([{ role: 'assistant', content: `Hej! Velkommen til ${store.name}! 😊 Hvad kan jeg hjælpe dig med i dag?` }]);
- } finally {
- setIsLoading(false);
- }
- };
- fetchWelcomeMessage();
- }, [showChat, store, messages.length]);
-
- // Auto-scroll i chat overlay
- useEffect(() => {
- if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
- }, [messages, isLoading]);
 
  // Roter "Dagens anbefaling" gennem kategorier hvert 4. sekund
  useEffect(() => {
@@ -542,81 +490,6 @@ const App = () => {
  await doSubscribe(normalizePhone(phone), address.trim());
  };
 
- // --- CHAT OVERLAY ---
- const N8N_WEBHOOK = import.meta.env.VITE_N8N_CHAT_WEBHOOK;
-
- const sanitizeReply = (text, fallback) => {
- if (!text || typeof text !== 'string') return fallback;
- if (text.includes('={{') || text.includes('$json.') || text.includes('$node') || text.match(/^\{\{.*\}\}$/)) return fallback;
- return text;
- };
-
- const handleSendMessage = async (e) => {
- e.preventDefault();
- if (!input.trim() || isLoading) return;
- const userMsg = { role: 'user', content: input };
- setMessages(prev => [...prev, userMsg]);
- const currentInput = input;
- setInput('');
- setIsLoading(true);
- try {
- const response = await fetch(N8N_WEBHOOK, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- message: currentInput,
- store_id: store?.id,
- store_name: store?.name,
- source: 'web_overlay',
- sessionId: sessionStorage.getItem(`getmait_overlay_${store?.id}`) || `overlay_${store?.id}_${Date.now()}`,
- timestamp: new Date().toISOString()
- })
- });
- const data = await response.json();
- const reply = sanitizeReply(
- data.reply || data.output || data.message,
- 'Tak! Vi vender tilbage hurtigst muligt.'
- );
- setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
- } catch (err) {
- setMessages(prev => [...prev, { role: 'assistant', content: `Hov, der opstod en fejl. Prøv igen eller ring til os.` }]);
- } finally {
- setIsLoading(false);
- }
- };
-
- // Send message to n8n (shared by user input and cart auto-send)
- const sendToChatN8n = async (msg) => {
-   setMessages(prev => [...prev, { role: 'user', content: msg }]);
-   setIsLoading(true);
-   try {
-     let sessionId = sessionStorage.getItem(`getmait_overlay_${store?.id}`);
-     if (!sessionId) {
-       sessionId = `overlay_${store?.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-       sessionStorage.setItem(`getmait_overlay_${store?.id}`, sessionId);
-     }
-     const response = await fetch(N8N_WEBHOOK, {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({
-         message: msg,
-         store_id: store?.id,
-         store_name: store?.name,
-         source: 'web_overlay',
-         sessionId,
-         timestamp: new Date().toISOString()
-       })
-     });
-     const data = await response.json();
-     const reply = sanitizeReply(data.reply || data.output || data.message, 'Tak! Vi vender tilbage hurtigst muligt.');
-     setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-   } catch {
-     setMessages(prev => [...prev, { role: 'assistant', content: 'Hov, der opstod en fejl. Prøv igen eller ring til os.' }]);
-   } finally {
-     setIsLoading(false);
-   }
- };
-
  const buildCartMessage = (cartItems) => {
    const lines = cartItems.map(i => {
      const nrStr = i.nr ? `nr. ${i.nr} ` : '';
@@ -633,9 +506,8 @@ const App = () => {
 
  const handleBestil = () => {
    if (cart.length === 0) return;
-   pendingCartRef.current = buildCartMessage(cart);
-   setMessages([]);
-   setShowChat(true);
+   setPendingOrder(buildCartMessage(cart));
+   setChatOpen(true);
  };
 
  const scrollToId = (id) => {
@@ -730,7 +602,7 @@ const App = () => {
  <PhoneCall size={20} /> Ring til din Mait
  </a>
  <button
- onClick={() => setShowChat(true)}
+ onClick={() => setChatOpen(true)}
  className="bg-white border-2 border-slate-100 text-slate-800 px-10 py-5 rounded-[24px] font-black uppercase tracking-widest flex items-center justify-center gap-3 text-base shadow-sm hover:bg-slate-50 transition-all"
  >
  <MessageSquare size={20} /> Chat din bestilling
@@ -1127,8 +999,13 @@ const App = () => {
  </div>
  </footer>
 
- {/* CHAT WIDGET - UÆNDRET */}
- <ChatWidget />
+ {/* CHAT WIDGET */}
+ <ChatWidget
+   forceOpen={chatOpen}
+   onOpen={() => setChatOpen(false)}
+   pendingOrder={pendingOrder}
+   onOrderSent={() => setPendingOrder(null)}
+ />
 
  {/* STICKY KURV-BAR */}
  {cart.length > 0 && (
@@ -1160,220 +1037,6 @@ const App = () => {
      onAdd={(cartItem) => setCart(prev => [...prev, cartItem])}
      onClose={() => setModalItem(null)}
    />
- )}
-
- {/* CHAT OVERLAY — åbnes via "Chat din bestilling" */}
- {showChat && (
- <div className="fixed inset-0 z-[200] chat-overlay-in">
-
- {/* ── MOBIL: ChatWidget-stil (fuld skærm) ── */}
- <div className="md:hidden flex flex-col h-dvh bg-white">
-
- {/* HEADER */}
- <div style={{ backgroundColor: brandColor }} className="p-6 text-white flex justify-between items-center relative overflow-hidden shrink-0">
- <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12 scale-150 pointer-events-none">
- <Utensils size={100} />
- </div>
- <div className="flex items-center gap-4 relative z-10">
- <div className="bg-white p-3.5 rounded-2xl shadow-2xl">
- <Sparkles size={24} className="text-orange-500" />
- </div>
- <div>
- <h3 className="font-black text-2xl leading-none tracking-tighter uppercase ">{store.name}</h3>
- {store.city && <p className="text-xs opacity-75 mt-0.5">{store.city}</p>}
- <div className="flex items-center gap-2 mt-1.5">
- <span className={`w-2.5 h-2.5 rounded-full ${isOpen ? 'bg-green-400 animate-pulse shadow-[0_0_12px_rgba(74,222,128,1)]' : 'bg-red-500'}`}></span>
- <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-90">{isOpen ? 'Din personlige Mait' : 'Vi holder lukket'}</p>
- </div>
- </div>
- </div>
- <button onClick={() => setShowChat(false)} className="hover:bg-white/20 p-2 rounded-full transition-all relative z-10">
- <X size={24} />
- </button>
- </div>
-
- {/* KONTAKT BAR */}
- <div className="bg-slate-50 px-6 py-4 flex justify-around border-b border-slate-100 shadow-inner shrink-0">
- <a href={`tel:${store.phone_number || store.contact_phone}`} className="flex flex-col items-center gap-1.5 group">
- <div className="bg-white p-3 rounded-xl shadow-sm group-hover:bg-green-50 group-active:scale-90 transition-all">
- <Phone size={18} className="text-slate-400 group-hover:text-green-600" />
- </div>
- <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ring</span>
- </a>
- <a href={`sms:${store.phone_number || store.contact_phone}`} className="flex flex-col items-center gap-1.5 group">
- <div className="bg-white p-3 rounded-xl shadow-sm group-hover:bg-blue-50 group-active:scale-90 transition-all">
- <MessageCircle size={18} className="text-slate-400 group-hover:text-blue-600" />
- </div>
- <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">SMS</span>
- </a>
- <div className="flex flex-col items-center gap-1.5">
- <div className="bg-red-50 p-3 rounded-xl shadow-sm border border-red-100 animate-pulse">
- <Sparkles size={18} className="text-red-600" />
- </div>
- <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Chat-ordre</span>
- </div>
- </div>
-
- {/* BESKEDER */}
- <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50/20">
- {messages.map((msg, i) => (
- <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
- <div className={`max-w-[85%] p-4 rounded-[2rem] text-[15px] leading-relaxed shadow-sm ${
- msg.role === 'user'
- ? 'bg-slate-800 text-white rounded-tr-none'
- : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none font-medium'
- }`}>
- {msg.content}
- </div>
- </div>
- ))}
- {isLoading && (
- <div className="flex justify-start">
- <div className="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100 rounded-tl-none flex items-center gap-3">
- <div className="flex gap-1">
- <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce"></span>
- <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
- <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
- </div>
- <span className="text-xs text-slate-400 font-bold ">Maiten tænker...</span>
- </div>
- </div>
- )}
- </div>
-
- {/* INPUT */}
- <div className="p-5 bg-white border-t border-slate-100 shrink-0">
- <form onSubmit={handleSendMessage} className="flex gap-3">
- <input
- type="text"
- value={input}
- onChange={(e) => setInput(e.target.value)}
- placeholder="Hvad skal vi sætte i ovnen, Mait?"
- className="flex-1 bg-slate-100 border-none rounded-2xl px-5 py-4 text-base focus:ring-2 outline-none font-medium placeholder:text-slate-400 shadow-inner"
- disabled={isLoading}
- />
- <button
- type="submit"
- disabled={isLoading || !input.trim()}
- style={{ backgroundColor: brandColor }}
- className="p-4 text-white rounded-2xl hover:opacity-90 disabled:opacity-30 transition-all shadow-2xl active:scale-95 flex items-center justify-center min-w-[56px]"
- >
- <Send size={22} />
- </button>
- </form>
- <div className="flex items-center justify-center gap-1.5 mt-4">
- <p className="text-[10px] text-slate-300 font-black tracking-[0.3em] uppercase">Powered by GetMait</p>
- <Sparkles size={10} className="text-orange-300" />
- </div>
- </div>
- </div>
-
- {/* ── DESKTOP: sidebar-overlay ── */}
- <div className="hidden md:flex h-full bg-slate-900/95 backdrop-blur-2xl items-center justify-center p-6">
- <div className="bg-[#FDFCFB] w-full max-w-5xl h-[850px] rounded-[4.5rem] shadow-[0_80px_160px_-40px_rgba(0,0,0,0.6)] flex flex-row overflow-hidden border border-white/20 chat-panel-in">
-
- {/* SIDEBAR */}
- <div className="w-1/3 bg-[#0F172A] p-12 text-white relative overflow-hidden flex flex-col justify-between shrink-0 border-r border-white/5">
- <div className="relative z-10">
- <div className="w-24 h-24 rounded-[3rem] flex items-center justify-center mb-12 shadow-2xl transform hover:rotate-6 transition-transform" style={{ backgroundColor: brandColor }}>
- <ChefHat size={48} className="text-white" />
- </div>
- <h3 className="text-5xl font-black uppercase tracking-tighter leading-[0.95] mb-8">Mait Kitchen Lounge.</h3>
- <div className="space-y-10">
- <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 hover:bg-white/10 transition-colors">
- <div className="flex items-center gap-3 mb-2">
- <Sparkles size={16} style={{ color: brandColor }} />
- <span className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: brandColor }}>
- {featuredCategory || 'Dagens anbefaling'}
- </span>
- </div>
- <div style={{ opacity: featuredVisible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
- <p className="text-sm font-bold text-slate-300 leading-relaxed">
- {featuredItem
- ? `${featuredItem.navn}${featuredItem.beskrivelse ? ` — ${featuredItem.beskrivelse}` : ''}`
- : `Spørg om dagens speciale fra ${store.name}!`}
- </p>
- {featuredItem?.pris && (
- <p className="text-xs font-black mt-2" style={{ color: brandColor }}>{featuredItem.pris} kr.</p>
- )}
- </div>
- </div>
- <div className="pt-8 border-t border-white/10 space-y-6">
- <div className="flex items-center gap-5">
- <div className={`h-3 w-3 rounded-full ${isOpen ? 'bg-green-500 animate-pulse shadow-[0_0_15px_#22c55e]' : 'bg-red-500'}`}></div>
- <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 ">{isOpen ? 'Køkkenet er Online' : 'Vi holder lukket'}</span>
- </div>
- <div className="flex items-center gap-5">
- <Clock size={20} style={{ color: brandColor }} />
- <span className="text-sm font-bold text-slate-300 uppercase tracking-widest">{isOpen ? `${store.waiting_time || 20} min. ventetid` : 'Lukket'}</span>
- </div>
- </div>
- </div>
- </div>
- <Pizza className="absolute -bottom-20 -left-20 opacity-5 w-[450px] h-[450px] rotate-12 pointer-events-none" style={{ color: brandColor }} />
- </div>
-
- {/* CHAT OMRÅDE */}
- <div className="flex-1 flex flex-col bg-[#FDFCFB]">
- <header className="p-10 border-b border-slate-100 flex justify-between items-center bg-white/40 backdrop-blur-md sticky top-0 z-10">
- <div className="flex items-center gap-4">
- <div className="w-3 h-3 rounded-full shadow-[0_0_15px_#f97316]" style={{ backgroundColor: brandColor }}></div>
- <span className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-400 leading-none">Personlig Concierge</span>
- </div>
- <button onClick={() => setShowChat(false)} className="p-4 bg-slate-100 rounded-3xl hover:bg-red-50 hover:text-red-600 transition-all text-slate-400 active:scale-90 shadow-sm border border-slate-200/50">
- <X size={24} />
- </button>
- </header>
-
- <div ref={scrollRef} className="flex-1 overflow-y-auto p-12 space-y-8 custom-scrollbar bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
- {messages.map((msg, i) => (
- <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
- <div className={`max-w-[80%] p-8 rounded-[3.5rem] text-xl font-bold leading-relaxed shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)] border ${
- msg.role === 'user'
- ? 'bg-[#0F172A] text-white rounded-tr-none border-[#0F172A]'
- : 'bg-white text-slate-800 border-slate-100 rounded-tl-none'
- }`}>
- {msg.content}
- </div>
- </div>
- ))}
- {isLoading && (
- <div className="flex justify-start">
- <div className="flex items-center gap-5 bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-xl">
- <Loader2 className="animate-spin" size={28} style={{ color: brandColor }} />
- <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-300 leading-none">Mait forbereder svaret...</span>
- </div>
- </div>
- )}
- </div>
-
- <div className="p-10 bg-white border-t border-slate-100 shrink-0">
- <form onSubmit={handleSendMessage} className="flex gap-4 mb-6 max-w-4xl mx-auto">
- <input
- type="text"
- value={input}
- onChange={(e) => setInput(e.target.value)}
- placeholder="Hvad kan jeg sætte i gang for dig?"
- className="flex-1 bg-[#F9FAFB] border-2 border-slate-200 rounded-[3rem] px-8 py-6 text-xl focus:bg-white outline-none font-bold placeholder:text-slate-200 shadow-inner transition-all"
- onFocus={e => e.target.style.borderColor = brandColor}
- onBlur={e => e.target.style.borderColor = '#e2e8f0'}
- disabled={isLoading}
- />
- <button type="submit" disabled={isLoading || !input.trim()} className="p-6 rounded-[3rem] text-white shadow-[0_25px_50px_-12px_rgba(234,88,12,0.4)] hover:opacity-90 hover:scale-105 transition-all active:scale-90 flex items-center justify-center disabled:opacity-30 shrink-0" style={{ backgroundColor: brandColor }}>
- <Send size={36} />
- </button>
- </form>
- <div className="flex justify-center gap-8 opacity-30">
- <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400"><Lock size={12} /> Krypteret</div>
- <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400"><Zap size={12} /> Hurtig AI</div>
- <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400"><ChefHat size={12} /> Køkken-klar</div>
- </div>
- </div>
- </div>
- </div>
- </div>
-
- </div>
  )}
 
  {/* HANDELSBETINGELSER MODAL */}
