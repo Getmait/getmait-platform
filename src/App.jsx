@@ -129,7 +129,7 @@ const ItemModal = ({ item, tilbehoerItems, brandColor, onAdd, onClose }) => {
                       className={`px-4 py-2 rounded-full text-sm font-black border-2 transition-all ${selectedSize === size ? 'text-white' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
                       style={selectedSize === size ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
                     >
-                      {size} — {sizePrice} kr
+                      {size.replace(/^Fam\.\s*/, '')} — {sizePrice} kr
                     </button>
                   );
                 })}
