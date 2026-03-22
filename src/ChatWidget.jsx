@@ -78,7 +78,7 @@ const ChatWidget = () => {
 
         // 3. Fetch store data fra Supabase
         const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/stores?subdomain=eq.${slug}&select=id,name,primary_color,contact_phone,phone_number,city`,
+          `${SUPABASE_URL}/rest/v1/stores?subdomain=eq.${slug}&select=id,name,primary_color,contact_phone,phone_number,city,is_open,opening_hours`,
           {
             headers: {
               'apikey': SUPABASE_ANON_KEY,
@@ -251,6 +251,32 @@ const ChatWidget = () => {
       setIsLoading(false);
     }
   };
+
+  /**
+   * ÅBNINGSTIDSTJEK
+   * Returnerer null (usynlig widget) hvis butikken er lukket
+   */
+  if (!isLoadingStore && store) {
+    const oh = store.opening_hours || {};
+    let storeClosed = store.is_open === false;
+    if (!storeClosed) {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Europe/Copenhagen', weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(new Date());
+      const get = t => parts.find(p => p.type === t).value;
+      const day = get('weekday').toLowerCase();
+      const cur = parseInt(get('hour')) * 60 + parseInt(get('minute'));
+      const todayH = oh[day];
+      if (!todayH) {
+        storeClosed = true;
+      } else {
+        const [openH, openM] = todayH.open.split(':').map(Number);
+        const [closeH, closeM] = todayH.close.split(':').map(Number);
+        if (cur < openH * 60 + openM || cur >= closeH * 60 + closeM) storeClosed = true;
+      }
+    }
+    if (storeClosed) return null;
+  }
 
   /**
    * LOADING STATE
