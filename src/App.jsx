@@ -1009,7 +1009,7 @@ const App = () => {
 
  {/* STICKY KURV-BAR */}
  {cart.length > 0 && (
-   <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+   <div className="fixed bottom-28 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
      <div className="pointer-events-auto bg-slate-900 text-white rounded-full pl-5 pr-2 py-2 flex items-center gap-4 shadow-2xl border border-slate-800">
        <div className="flex items-center gap-2.5">
          <ShoppingCart size={16} className="opacity-75" />
