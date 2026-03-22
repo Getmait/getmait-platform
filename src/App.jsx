@@ -512,7 +512,7 @@ const App = () => {
  </div>
  ) : (
  <>
- {/tilbehør/i.test(activeCategory) && currentItems.some(i => i.variants?.['Fam. 60x60']) && (
+ {activeCategory.toUpperCase().includes('TILBEH') && currentItems.some(i => i.variants?.['Fam. 60x60']) && (
    <p className="text-xs text-slate-400 mb-4">* Priser gælder alm. størrelse. Fam. 60×60 priser ses ved bestilling.</p>
  )}
  <div className="grid md:grid-cols-2 gap-8">
