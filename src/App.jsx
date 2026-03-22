@@ -498,7 +498,7 @@ const App = () => {
      const removedStr = i.removedIngredients.length > 0 ? `, uden ${i.removedIngredients.join(', ')}` : '';
      const extrasStr = i.extras.length > 0 ? `, med ${i.extras.map(e => e.navn).join(', ')}` : '';
      const qtyStr = i.qty > 1 ? `${i.qty}x ` : '';
-     return `- ${qtyStr}${nrStr}${i.navn}${sizeStr}${baseStr}${removedStr}${extrasStr} — ${i.lineTotal} kr`;
+     return `- ${qtyStr}${nrStr}${i.navn}${sizeStr}${baseStr}${removedStr}${extrasStr} (${i.lineTotal} kr)`;
    });
    const total = Math.round(cartItems.reduce((s, i) => s + i.lineTotal, 0));
    return `Jeg vil gerne bestille:\n${lines.join('\n')}\nTotal: ${total} kr`;
