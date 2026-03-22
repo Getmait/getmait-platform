@@ -507,6 +507,7 @@ const App = () => {
  const handleBestil = () => {
    if (cart.length === 0) return;
    setPendingOrder(buildCartMessage(cart));
+   setCart([]);
    setChatOpen(true);
  };
 
