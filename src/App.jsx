@@ -500,7 +500,7 @@ const App = () => {
  const buildCartMessage = (cartItems) => {
    const lines = cartItems.map(i => {
      const nrStr = i.nr ? `nr. ${i.nr} ` : '';
-     const sizeStr = i.size && i.size !== 'Alm.' ? ` (${i.size})` : '';
+     const sizeStr = i.size ? ` (${i.size})` : '';
      const baseStr = i.base ? `, ${i.base}` : '';
      const removedStr = i.removedIngredients.length > 0 ? `, uden ${i.removedIngredients.join(', ')}` : '';
      const extrasStr = i.extras.length > 0 ? `, med ${i.extras.map(e => e.navn).join(', ')}` : '';
