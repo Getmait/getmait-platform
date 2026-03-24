@@ -36,6 +36,7 @@ const ItemModal = ({ item, tilbehoerItems, brandColor, onAdd, onClose }) => {
   const sizes = item.variants?.sizes || [];
   const bases = item.variants?.bases || [];
   const prices = item.variants?.prices || {};
+  const basePrices = item.variants?.base_prices || {};
   const isTilbehoer = /tilbehør/i.test(item.kategori || '');
 
   const [selectedSize, setSelectedSize] = useState(sizes.length > 0 ? 'Alm.' : null);
@@ -52,9 +53,12 @@ const ItemModal = ({ item, tilbehoerItems, brandColor, onAdd, onClose }) => {
   }, [item.beskrivelse, isTilbehoer]);
 
   const unitPrice = React.useMemo(() => {
-    if (!selectedSize || selectedSize === 'Alm.') return parseFloat(item.pris) || 0;
-    return parseFloat(prices[selectedSize]) || parseFloat(item.pris) || 0;
-  }, [selectedSize, item.pris, prices]);
+    const sizePrice = (!selectedSize || selectedSize === 'Alm.')
+      ? parseFloat(item.pris) || 0
+      : parseFloat(prices[selectedSize]) || parseFloat(item.pris) || 0;
+    const basePrice = selectedBase ? (parseFloat(basePrices[selectedBase]) || 0) : 0;
+    return sizePrice + basePrice;
+  }, [selectedSize, selectedBase, item.pris, prices, basePrices]);
 
   const extrasTotal = extras.reduce((sum, e) => sum + e.pris, 0);
   const lineTotal = (unitPrice + extrasTotal) * qty;
@@ -142,16 +146,19 @@ const ItemModal = ({ item, tilbehoerItems, brandColor, onAdd, onClose }) => {
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Bund (tilvalg)</p>
               <div className="flex flex-wrap gap-2">
-                {bases.map(base => (
-                  <button
-                    key={base}
-                    onClick={() => setSelectedBase(prev => prev === base ? null : base)}
-                    className={`px-4 py-2 rounded-full text-sm font-black border-2 transition-all ${selectedBase === base ? 'text-white' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
-                    style={selectedBase === base ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
-                  >
-                    {base}
-                  </button>
-                ))}
+                {bases.map(base => {
+                  const basePrice = parseFloat(basePrices[base]) || 0;
+                  return (
+                    <button
+                      key={base}
+                      onClick={() => setSelectedBase(prev => prev === base ? null : base)}
+                      className={`px-4 py-2 rounded-full text-sm font-black border-2 transition-all ${selectedBase === base ? 'text-white' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                      style={selectedBase === base ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
+                    >
+                      {base}{basePrice > 0 ? ` +${basePrice} kr` : ''}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
