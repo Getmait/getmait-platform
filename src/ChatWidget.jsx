@@ -19,8 +19,8 @@ import { MessageSquare, X, Send, Utensils, Sparkles, Phone, AlertCircle } from '
 
 const ChatWidget = ({ forceOpen = false, onOpen, pendingOrder = null, onOrderSent }) => {
   // --- KONFIGURATION (Hardcoded for production stability) ---
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://supabase.getmait.dk";
+  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc3MDI4NjgwMCwiZXhwIjo0OTI1OTYwNDAwLCJyb2xlIjoiYW5vbiJ9.Lshy9-QNUcZhFol6_zI6yinhWak7nmkd03rMs94-viE";
   const N8N_CHAT_WEBHOOK = "https://n8n.getmait.dk/webhook/getmait-chat";
 
   /**
