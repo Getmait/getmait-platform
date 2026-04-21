@@ -299,7 +299,7 @@ const App = () => {
  if (subdomain.startsWith('platform-')) {
  slug = defaultSlug;
  } else {
- // Strip miljø-suffiks: devpizza-dev → devpizza, devpizza-staging → devpizza
+ // Strip miljø-suffiks: dit-pizzaria-dev → dit-pizzaria, dit-pizzaria-staging → dit-pizzaria
  slug = subdomain.replace(/-(dev|staging)$/, '');
  }
  } else if (hostname.includes('sslip.io')) {
@@ -476,17 +476,13 @@ const App = () => {
  setSubscribeError('');
 
  const normalizedPhone = normalizePhone(phone);
- const { data: existing } = await supabase
- .from('customers')
- .select('address')
- .eq('tenant_id', tenantId)
- .eq('phone', normalizedPhone)
- .maybeSingle();
+ const { data: existingAddress } = await supabase
+ .rpc('get_customer_address', { p_tenant_id: tenantId, p_phone: normalizedPhone });
 
  setCheckingPhone(false);
 
- if (existing?.address) {
- await doSubscribe(normalizedPhone, existing.address);
+ if (existingAddress) {
+ await doSubscribe(normalizedPhone, existingAddress);
  } else {
  setKlubStep(2);
  }

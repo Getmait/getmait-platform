@@ -134,7 +134,7 @@ const ChatWidget = ({ forceOpen = false, onOpen, pendingOrder = null, onOrderSen
       // Generer eller hent session ID
       let sessionId = sessionStorage.getItem(`getmait_session_${store.id}`);
       if (!sessionId) {
-        sessionId = `${store.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        sessionId = `${store.id}_${crypto.randomUUID()}`;
         sessionStorage.setItem(`getmait_session_${store.id}`, sessionId);
       }
 
@@ -204,7 +204,7 @@ const ChatWidget = ({ forceOpen = false, onOpen, pendingOrder = null, onOrderSen
     try {
       let sessionId = sessionStorage.getItem(`getmait_session_${store.id}`);
       if (!sessionId) {
-        sessionId = `${store.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        sessionId = `${store.id}_${crypto.randomUUID()}`;
         sessionStorage.setItem(`getmait_session_${store.id}`, sessionId);
       }
       const response = await fetch(N8N_CHAT_WEBHOOK, {
@@ -241,7 +241,7 @@ const ChatWidget = ({ forceOpen = false, onOpen, pendingOrder = null, onOrderSen
       // Generer eller hent session ID fra sessionStorage (persisterer per browser session)
       let sessionId = sessionStorage.getItem(`getmait_session_${store.id}`);
       if (!sessionId) {
-        sessionId = `${store.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        sessionId = `${store.id}_${crypto.randomUUID()}`;
         sessionStorage.setItem(`getmait_session_${store.id}`, sessionId);
       }
 
