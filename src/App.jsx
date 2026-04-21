@@ -307,7 +307,8 @@ const App = () => {
  } else if (hostname.includes('localhost') || isIpAddress) {
  slug = defaultSlug;
  } else {
- slug = hostname.split('.')[0];
+ // Strip www. prefix before extracting slug (e.g. www.ankyra.dk → ankyra)
+ slug = hostname.replace(/^www\./, '').split('.')[0];
  }
 
  try {
